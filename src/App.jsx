@@ -79,7 +79,7 @@ const App = () => {
       <div className="container mt-5 mb-5">
         <TitleTypeWriter />
 
-        {loading || isSimulatedLoading ? (
+        {/*loading || isSimulatedLoading ? (
           <SizeFilterSkeleton />
         ) : error ? (
           <div className="alert alert-danger text-center" role="alert">
@@ -87,7 +87,7 @@ const App = () => {
           </div>
         ) : (
           <SizeFilter products={products} totalFiltered={totalFiltered} />
-        )}
+        )*/}
 
         <div className="row">
           {filteredProducts?.length > 0 && !loading && !isSimulatedLoading && (

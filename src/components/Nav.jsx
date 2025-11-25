@@ -5,7 +5,7 @@ import { CiMenuFries } from "react-icons/ci";
 
 const Nav = () => {
   return (
-    <nav className="navbar navbar-expand-lg bg-body-tertiary mb-5 custom-navbar fixed-top w-100">
+    <nav className="navbar navbar-expand-lg bg-body-tertiary mb-1 custom-navbar fixed-top w-100">
       <div className="container-fluid">
         <a className="navbar-brand" href="/">
           <img src={logo} alt="logo" style={{ width: "100px" }} />
@@ -23,7 +23,7 @@ const Nav = () => {
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto">
-            <li className="nav-item">
+            {/*<li className="nav-item">
               <a className="nav-link active" aria-current="page" href="#">
                 Inicio
               </a>
@@ -40,7 +40,7 @@ const Nav = () => {
             </li>
             <li className="nav-item">
               <a className="nav-link">Contacto</a>
-            </li>
+            </li>*/}
           </ul>
           <MyCart />
         </div>
