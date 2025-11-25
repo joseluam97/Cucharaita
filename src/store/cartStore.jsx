@@ -10,7 +10,7 @@ const useCartStore = create((set) => ({
   addToCart: (product) =>
     set((state) => {
       // Busca si el producto ya existe en el carrito
-      const existingProduct = state.cart.find((item) => item.id === product.id);
+      const existingProduct = state.cart.find((item) => (item.id === product.id && item.selectedOption === product.selectedOption));
 
       // Si el producto ya existe en el carrito, incrementa la cantidad
       if (existingProduct) {

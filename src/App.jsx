@@ -79,35 +79,30 @@ const App = () => {
       <div className="container mt-5 mb-5">
         <TitleTypeWriter />
 
+        {loading || isSimulatedLoading ? (
+          <SizeFilterSkeleton />
+        ) : error ? (
+          <div className="alert alert-danger text-center" role="alert">
+            Error cargando productos: {error.message}
+          </div>
+        ) : (
+          <SizeFilter products={products} totalFiltered={totalFiltered} />
+        )}
+
         <div className="row">
-          {loading || isSimulatedLoading ? (
-            <SizeFilterSkeleton />
-          ) : error ? (
-            <div className="col-12">
-              <h2 className="text-center text-danger">
-                Error cargando productos: {error.message}
-              </h2>
+          {filteredProducts?.length > 0 && !loading && !isSimulatedLoading && (
+            <div className="col-12"> {/* Ahora la lista de productos ocupa 12 columnas (ancho completo) */}
+              <ProductsList products={filteredProducts} />
             </div>
-          ) : filteredProducts.length > 0 ? (
-            <>
-              {/* Columna del filtro */}
-              <div className="col-md-2">
-                <SizeFilter products={products} totalFiltered={totalFiltered} />
-              </div>
-              {/* Columna de productos */}
-              <div className="col-md-10">
-                <ProductsList products={filteredProducts} />
-              </div>
-            </>
-          ) : (
+          )}
+          {(!loading && !isSimulatedLoading && filteredProducts.length === 0) && (
             <div className="col-12">
-              <p className="text-center">No hay productos disponibles.</p>
+              <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Mostrar el SidebarOffCanvas, carrito de compras */}
       {isVisible && <SidebarOffCanvas />}
 
       <Footer />

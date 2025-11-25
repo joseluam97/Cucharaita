@@ -16,9 +16,6 @@ const useFetch = (request_products) => {
         .select('*')
         .order('id', { ascending: false });
 
-        console.log("Datos obtenidos de Supabase:", data);
-        console.log("Error obtenidos de Supabase:", error);
-
         setData(data);
       } catch (error) {
         setError(error);

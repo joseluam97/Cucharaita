@@ -13,11 +13,16 @@ const SidebarOffCanvas = () => {
   };
 
   const generateWhatsAppMessage = () => {
-    let message = "Hola Cucharaita, saludos. Quiero este pedido:\n\n";
-    cart.forEach((product) => {
-      message += `Producto: ${product.name}\nCantidad: ${product.quantity}\nPrecio: ${product.price} €\n\n`;
+    let message = "Hola Cucharaita, saludos. \n\nListado de productos:\n";
+    cart.forEach((product, index) => {
+      if(product.selectedOption){
+        message += `● ${product.name} (${product.selectedOption}) x${product.quantity}: *${product.price*product.quantity}€*\n`;
+      }
+      else{
+        message += `● ${product.name} x${product.quantity}: *${product.price*product.quantity}€*\n`;
+      }
     });
-    message += `Subtotal: ${calculateSubtotal().toFixed(2)} €`;
+    message += `\n*Subtotal: ${calculateSubtotal().toFixed(2)} €*`;
     return encodeURIComponent(message);
   };
 
@@ -63,9 +68,9 @@ const SidebarOffCanvas = () => {
                 />
               </div>
               <div className="col-6">
-                <h4 className="mb-4 title-product">{productCart.name}</h4>
-                <p className="mb-0 detalles-product">
-                  {productCart.description}
+                <h4 className="mb-0 title-product">{productCart.name}</h4>
+                <p className="mb-2 detalles-product">
+                  {productCart != "" ? productCart.selectedOption : ""}
                 </p>
               </div>
               <div className="col-3 text-end">

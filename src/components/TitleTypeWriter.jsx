@@ -21,14 +21,14 @@ const TitleTypeWriter = () => {
           />
         </h3>
       </div>
-      <div className="col-12 col-md-5 text-center">
+      {/*<div className="col-12 col-md-5 text-center">
         <img
           style={{ width: "350px", maxWidth: "100%" }}
           src={imgShopping}
           alt="Ecommerce"
           className="img-fluid text-center px-3"
         />
-      </div>
+      </div>*/}
     </section>
   );
 };
