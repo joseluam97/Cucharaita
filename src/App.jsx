@@ -23,7 +23,7 @@ const App = () => {
   const { selectedSizes } = useSizeFilterStore();
 
   // Usar el hook useFetch para obtener los productos
-  const { data: products, loading, error } = useFetch("/json/products.json");
+  const { data: products, loading, error } = useFetch("products");
 
   // Estado para simular carga mínima
   const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
