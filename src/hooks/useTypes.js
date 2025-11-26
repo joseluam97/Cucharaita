@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { supabase } from "../../supabase";
 
-const useFetch = (request_products) => {
+const useTypes = (request_types) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -10,11 +10,11 @@ const useFetch = (request_products) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log(request_products)
+        console.log(request_types)
         const { data, error } = await supabase
-        .from('Productos')
-        .select('*')
-        .order('id', { ascending: false });
+          .from('Type')
+          .select('*')
+          .order('id', { ascending: false });
 
         setData(data);
       } catch (error) {
@@ -25,9 +25,9 @@ const useFetch = (request_products) => {
     };
 
     fetchData();
-  }, [request_products]);
+  }, [request_types]);
 
   return { data, loading, setLoading, error };
 };
 
-export default useFetch;
+export default useTypes;

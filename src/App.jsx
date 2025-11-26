@@ -1,108 +1,71 @@
-import { useEffect, useMemo, useState } from "react";
+// src/App.jsx
+
+import { useEffect } from "react";
+import { Routes, Route } from "react-router-dom"; // 👈 Importar para la gestión de rutas
 import useCartStore from "./store/cartStore";
 import useOffcanvasStore from "./store/offcanvasStore";
 import useTotalStore from "./store/totalProductStore";
 import useBalanceStore from "./store/balanceStore";
-import useSizeFilterStore from "./store/sizeFilterStore";
 
-import ProductsList from "./components/ProductsList";
-import Footer from "./components/Footer";
+// Componentes del layout
 import Nav from "./components/Nav";
+import Footer from "./components/Footer";
 import SidebarOffCanvas from "./components/SidebarOffCanvas";
-import SizeFilter from "./components/SizeFilter";
-import useFetch from "./hooks/useFetch"; // Importar el custom hook
-import TitleTypeWriter from "./components/TitleTypeWriter";
-import SizeFilterSkeleton from "./components/SizeFilterSkeleton";
+
+// Vistas/Páginas
+import Home from "./components/Home"; // 👈 Importar la nueva vista Home
+import ProductDetail from "./components/ProductDetail"; // 👈 Asumimos que tienes el detalle
 
 const App = () => {
-  // Llama a `useCartStore` para acceder al estado del carrito y las funciones
+  // Solo se quedan los stores necesarios para el LAYOUT y el OFFcanvas
   const { cart } = useCartStore();
   const { getTotalProducts } = useTotalStore();
   const { toggleBalanceo } = useBalanceStore();
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
-  const { selectedSizes } = useSizeFilterStore();
 
-  // Usar el hook useFetch para obtener los productos
-  const { data: products, loading, error } = useFetch("products");
-
-  // Estado para simular carga mínima
-  const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
-
-  // UseEffect para manejar el estado de balanceo y la carga mínima
+  // UseEffect para manejar el estado de balanceo y el Offcanvas
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsSimulatedLoading(false); // Desactiva la carga simulada después de 3 segundos
-    }, 1000);
-
+    // Si hay productos en el carrito, activa la animación de balanceo y abre el Offcanvas
     if (cart.length > 0) {
-      const totalProductsBalanceo = getTotalProducts(cart); // Calcula los productos únicos
-      // Abre el carrito solo si no está visible
+      const totalProductsBalanceo = getTotalProducts(cart);
+      
       if (!isVisible) {
         toggleOffcanvas(true);
       }
 
-      // Activa la animación si hay productos únicos
       if (totalProductsBalanceo > 0) {
         toggleBalanceo(true);
       }
-
-      return () => clearTimeout(timer); // Limpiar el temporizador al desmontar el componente
     }
+    // No necesitamos el temporizador de carga simulada aquí,
+    // ese temporizador ahora está en el componente Home.
 
-    return () => clearTimeout(timer); // Limpiar el temporizador al desmontar el componente
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
-  // Filtrar productos por talla seleccionada
-  const filteredProducts = useMemo(() => {
-    if (!selectedSizes.length) return products; // Si no hay tallas seleccionadas, devolver todos los productos
-
-    return products.filter(
-      (product) =>
-        selectedSizes.some((size) => product.options.includes(size)) // Filtrar si el producto tiene alguna talla seleccionada
-    );
-  }, [selectedSizes, products]); // Dependemos tanto de `selectedSizes` como de `products`
-
-  // Obtener el total de productos filtrados usando useMemo
-  const totalFiltered = useMemo(() => {
-    // Si no hay filtros aplicados, mostrar el total de productos
-    if (selectedSizes.length === 0) {
-      return products?.length || 0; // Devuelve 0 si no hay productos
-    }
-    // Si hay filtros, mostrar el total de productos filtrados
-    return filteredProducts.length;
-  }, [selectedSizes, filteredProducts, products]);
 
   return (
     <>
       <Nav />
+      
+      <main>
+        <Routes>
+          {/* Ruta principal (Home) */}
+          <Route path="/" element={<Home />} /> 
+          
+          {/* Ruta para el detalle del producto */}
+          <Route path="/product/:id" element={<ProductDetail />} />
+          
+          {/* Opcional: Ruta 404 */}
+          <Route path="*" element={
+              <div className="container mt-5 text-center">
+                  <h1>404</h1>
+                  <p>Página no encontrada.</p>
+              </div>
+          } />
+        </Routes>
+      </main>
 
-      <div className="container mt-5 mb-5">
-        <TitleTypeWriter />
-
-        {/*loading || isSimulatedLoading ? (
-          <SizeFilterSkeleton />
-        ) : error ? (
-          <div className="alert alert-danger text-center" role="alert">
-            Error cargando productos: {error.message}
-          </div>
-        ) : (
-          <SizeFilter products={products} totalFiltered={totalFiltered} />
-        )*/}
-
-        <div className="row">
-          {filteredProducts?.length > 0 && !loading && !isSimulatedLoading && (
-            <div className="col-12"> {/* Ahora la lista de productos ocupa 12 columnas (ancho completo) */}
-              <ProductsList products={filteredProducts} />
-            </div>
-          )}
-          {(!loading && !isSimulatedLoading && filteredProducts.length === 0) && (
-            <div className="col-12">
-              <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* El Sidebar Offcanvas se gestiona desde App */}
       {isVisible && <SidebarOffCanvas />}
 
       <Footer />

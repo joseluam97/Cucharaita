@@ -26,7 +26,7 @@ const useCartStore = create((set) => ({
       }
 
       // Si el producto no está en el carrito, lo agrega con cantidad 1
-      return { cart: [...state.cart, { ...product, quantity: 1 }] };
+      return { cart: [...state.cart, { ...product, quantity: product.quantity }] };
     }),
 
   // Función para eliminar un producto del carrito
