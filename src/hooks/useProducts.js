@@ -28,8 +28,6 @@ const useProducts = ({ id = null }) => {
             type ( id, name ) // Traemos solo el nombre del tipo
           `);
 
-        console.log("Fetching product(s) with ID:", productId);
-
         // 1. Aplicar filtro: Si se proporciona un ID, filtramos por él.
         if (productId) {
           query = query.eq('id', productId).single(); // .single() espera un solo objeto

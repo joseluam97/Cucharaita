@@ -115,6 +115,40 @@ const SidebarOffCanvas = () => {
     return encodeURIComponent(message);
   };
 
+  const getOptionsSelectedProducts = (productCart) => {
+    let listOptions = [];
+    if (!productCart?.options) {
+      return null;
+    }
+
+    Object.values(productCart.options).forEach((options, indexGroup) => {
+      const generateKey = (optionId) => `option-${productCart.id}-${optionId}-${indexGroup}`;
+
+      if (Array.isArray(options)) {
+        // Opciones múltiples
+        options.forEach(option => {
+          listOptions.push(
+            <p className="mt-1 mb-0 detalles-product" key={generateKey(option.id)}>
+              {option.name} {option.add_price > 0 ? `( +${option.add_price.toFixed(2)} € )` : ''}
+            </p>
+          );
+        });
+      } else {
+        // Opción única
+        listOptions.push(
+          <p className="mb-2 detalles-product" key={generateKey(options.id)}>
+            {options.name} {options.add_price > 0 ? `( +${options.add_price.toFixed(2)} € )` : ''}
+          </p>
+        );
+      }
+    });
+
+    console.log("Opciones listadas para el producto:");
+    console.log(listOptions);
+
+    return listOptions;
+  };
+
   return (
     <div
       className={`offcanvas offcanvas-end px-1 ${isVisible ? "show offcanvas-open" : ""
@@ -158,9 +192,7 @@ const SidebarOffCanvas = () => {
               </div>
               <div className="col-5">
                 <h4 className="mb-0 title-product">{productCart.name}</h4>
-                <p className="mb-2 detalles-product">
-                  {productCart.selectedOption ? productCart.selectedOption : ""}
-                </p>
+                {getOptionsSelectedProducts(productCart)}
               </div>
               <div className="col-4 text-end">
                 <span className="fw-bold">
@@ -226,11 +258,14 @@ const SidebarOffCanvas = () => {
 
         {/* SUBTOTAL (Revisado para claridad) */}
         <div className="d-flex justify-content-between align-items-center">
-          <h5 className="mb-0 fw-bold">SUBTOTAL:</h5>
-          <span className="fw-bold fs-2">
+
+          <h5 className="mb-0 fw-bold w-50">SUBTOTAL:</h5>
+
+          <span className="fw-bold fs-2 w-50 text-end">
             {calculateTotal().toFixed(2)}
             <span style={{ color: "#ff9c08" }}> €</span>
           </span>
+
         </div>
 
         <p className="small text-muted text-end mt-0 mb-4">

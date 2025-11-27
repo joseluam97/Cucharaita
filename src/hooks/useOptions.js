@@ -1,8 +1,8 @@
-// hooks/useTypes.js
+// hooks/useOptions.js
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabase";
 
-const useTypes = ({} = {}) => {
+const useOptions = ({ id_product = null }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,8 +11,12 @@ const useTypes = ({} = {}) => {
     const fetchData = async () => {
       try {
         const { data, error } = await supabase
-          .from('Type')
-          .select('*')
+          .from('Options_Products')
+          .select(`
+            *,
+            group (id, name, multiple)
+          `)
+          .eq('product', id_product)
           .order('id', { ascending: true });
 
         if (error) throw error; // Manejo explícito de error de Supabase
@@ -26,10 +30,12 @@ const useTypes = ({} = {}) => {
       }
     };
 
-    fetchData();
-  }, []);
+    if (id_product != -1) {
+      fetchData();
+    }
+  }, [id_product]);
 
   return { data, loading, setLoading, error };
 };
 
-export default useTypes;
+export default useOptions;
