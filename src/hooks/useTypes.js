@@ -1,8 +1,8 @@
+// hooks/useTypes.js
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { supabase } from "../../supabase";
 
-const useTypes = (request_types) => {
+const useTypes = ({ /* Aquí podrías recibir parámetros de filtro si los hubiera, ej: filter = {} */ } = {}) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -10,22 +10,24 @@ const useTypes = (request_types) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log(request_types)
         const { data, error } = await supabase
           .from('Type')
           .select('*')
-          .order('id', { ascending: false });
+          .order('id', { ascending: true });
+
+        if (error) throw error; // Manejo explícito de error de Supabase
 
         setData(data);
-      } catch (error) {
-        setError(error);
+      } catch (e) {
+        console.error("Error fetching types:", e);
+        setError(e);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [request_types]);
+  }, []);
 
   return { data, loading, setLoading, error };
 };

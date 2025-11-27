@@ -16,11 +16,8 @@ const useProducts = ({ id = null }) => {
     // para que la consulta se ejecute solo si el ID cambia (o si es nulo y se ejecuta una vez).
     const productId = id;
 
-    // Si el ID es null, traemos todos los productos.
-    // Si el ID es un número, traemos ese producto.
-
     const fetchData = async () => {
-      setLoading(true); // Siempre empieza cargando
+      setLoading(true);
       setError(null);
 
       try {
@@ -28,7 +25,7 @@ const useProducts = ({ id = null }) => {
           .from('Productos')
           .select(`
             *,
-            type ( name ) // Traemos solo el nombre del tipo
+            type ( id, name ) // Traemos solo el nombre del tipo
           `);
 
         console.log("Fetching product(s) with ID:", productId);
@@ -51,7 +48,7 @@ const useProducts = ({ id = null }) => {
 
         // Si se busca un producto único y no se encuentra (data es null), marcamos error o manejamos.
         // Supabase/PostgREST devuelve un error 406 si no encuentra con .single(), pero es bueno revisar.
-        if (productId && !fetchedData) {
+        if ((productId && !fetchedData) || (fetchedData.active === false )) {
           setError({ message: 'Producto no encontrado' });
           setData(null);
         } else {
@@ -66,7 +63,9 @@ const useProducts = ({ id = null }) => {
       }
     };
 
-    fetchData();
+    if (id != -1) {
+      fetchData();
+    }
   }, [id]); // El hook se re-ejecuta solo si el 'id' cambia
 
   return { data, loading, setLoading, error };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { BsCartPlus } from "react-icons/bs";
 import useCartStore from "../store/cartStore";
 import { useNavigate } from "react-router-dom";
+import { Base64 } from 'js-base64';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCartStore();
@@ -14,7 +15,16 @@ const ProductCard = ({ product }) => {
   // FUNCIÓN DE NAVEGACIÓN
   // Esta función solo se llamará cuando se haga clic en el contenido que NO es el botón.
   const handleNavigation = () => {
-    navigate(`/product/${product.id}`);
+    // 1. Convertir el ID numérico a string.
+    const originalId = String(product.id);
+
+    // 2. CODIFICAR el ID usando Base64.
+    const encodedId = Base64.encodeURI(originalId);
+
+    console.log("Navegando al producto con ID codificado:", encodedId);
+
+    // 3. Navegar usando el ID codificado.
+    navigate(`/product/${encodedId}`);
   };
 
   // FUNCIÓN DEL BOTÓN DE CARRITO

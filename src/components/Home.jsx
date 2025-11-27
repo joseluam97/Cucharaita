@@ -11,6 +11,7 @@ import useSizeFilterStore from "../store/sizeFilterStore";
 import ProductsList from "./ProductsList";
 import SizeFilter from "./SizeFilter";
 import useProducts from "../hooks/useProducts";
+import useTypes from "../hooks/useTypes";
 import TitleTypeWriter from "./TitleTypeWriter";
 import SizeFilterSkeleton from "./SizeFilterSkeleton";
 
@@ -22,8 +23,12 @@ const Home = () => {
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
   const { selectedSizes } = useSizeFilterStore();
 
+  const [listProduct, setListProduct] = useState([]);
+  const [typeSelectedFilter, setTypeSelectedFilter] = useState(null);
+
   // Usar el hook useProducts para obtener los productos
   const { data: products, loading, error } = useProducts({});
+  const { data: listTypes } = useTypes({});
 
   // Estado para simular carga mínima
   const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
@@ -63,38 +68,59 @@ const Home = () => {
   }, [selectedSizes, products]); // Dependemos tanto de `selectedSizes` como de `products`
 
   // Obtener el total de productos filtrados usando useMemo
-  const totalFiltered = useMemo(() => {
-    // Si no hay filtros aplicados, mostrar el total de productos
-    if (selectedSizes.length === 0) {
-      return products?.length || 0; // Devuelve 0 si no hay productos
+  useEffect(() => {
+    setListProduct(products);
+  }, [products]);
+
+  const filterByType = ((type) => {
+
+    // If the same type is selected, clear the filter
+    if (type?.id === typeSelectedFilter?.id) {
+      setTypeSelectedFilter(null);
+      setListProduct(products);
+      return;
     }
-    // Si hay filtros, mostrar el total de productos filtrados
-    return filteredProducts.length;
-  }, [selectedSizes, filteredProducts, products]);
+
+    // If a new type is selected, filter the products
+    setTypeSelectedFilter(type);
+    let allProducts = [];
+
+    allProducts = [...products].filter((product) => {
+      if (product.type.id === type.id) {
+        return product;
+      }
+    });
+    setListProduct(allProducts);
+  })
+
 
   return (
     <div className="container mt-5 mb-5">
       <TitleTypeWriter />
 
-      {/* Renderizado de filtros o esqueletos/errores */}
-      {/* Puedes descomentar esto cuando necesites el filtro de tallas */}
-      {/*loading || isSimulatedLoading ? (
-        <SizeFilterSkeleton />
-      ) : error ? (
-        <div className="alert alert-danger text-center" role="alert">
-          Error cargando productos: {error.message}
-        </div>
-      ) : (
-        <SizeFilter products={products} totalFiltered={totalFiltered} />
-      )*/}
+      <div
+        className="d-flex flex-wrap justify-content-center gap-3 mb-0 mt-2 p-3 rounded shadow-sm"
+        style={{ backgroundColor: '#c7d088' }} // Color de fondo claro para resaltar
+      >
+        {listTypes?.map((type) => (
+          <button
+            key={type.id}
+            type="button"
+            className={`btn btn-lg ${type.id === typeSelectedFilter?.id ? "btn-dark" : "btn-outline-dark"}`}
+            onClick={() => filterByType(type)}
+          >
+            {type?.name}
+          </button>
+        ))}
+      </div>
 
       <div className="row">
-        {filteredProducts?.length > 0 && !loading && !isSimulatedLoading && (
+        {listProduct?.length > 0 && !loading && !isSimulatedLoading && (
           <div className="col-12">
-            <ProductsList products={filteredProducts} />
+            <ProductsList products={listProduct} />
           </div>
         )}
-        {(!loading && !isSimulatedLoading && filteredProducts?.length === 0) && (
+        {(!loading && !isSimulatedLoading && listProduct?.length === 0) && (
           <div className="col-12">
             <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
           </div>
