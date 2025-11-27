@@ -84,6 +84,22 @@ const ProductDetail = () => {
         errorOptions
     } = useOptions({ id_product: productId });
 
+    
+    useEffect(() => {
+        if (product?.name) {
+            // Formato deseado: "Cucharaita - Nombre del Producto"
+            document.title = `Cucharaita - ${product.name}`;
+        } else {
+            // Título por defecto mientras carga o si hay error/no se encuentra
+            document.title = 'Cucharaita - Producto';
+        }
+
+        // Limpieza: restablece el título cuando el componente se desmonta (opcional pero recomendado)
+        return () => {
+            document.title = 'Cucharaita'; // O el título principal de tu sitio
+        };
+    }, [product]);
+    
     useEffect(() => {
         if (listOptions != null && product) {
             let uniqueGroups = groupOptionsByGroup(listOptions);
