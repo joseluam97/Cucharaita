@@ -143,9 +143,6 @@ const SidebarOffCanvas = () => {
       }
     });
 
-    console.log("Opciones listadas para el producto:");
-    console.log(listOptions);
-
     return listOptions;
   };
 

@@ -23,22 +23,37 @@ const Home = () => {
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
   const { selectedSizes } = useSizeFilterStore();
 
-  const [listProduct, setListProduct] = useState([]);
   const [typeSelectedFilter, setTypeSelectedFilter] = useState(null);
 
   // Usar el hook useProducts para obtener los productos
   const { data: products, loading, error } = useProducts({});
   const { data: listTypes } = useTypes({});
 
+  // 🛑 CAMBIO 1: Inicialización simple, el useEffect se encargará de llenarlo con caché si existe
+  const [listProduct, setListProduct] = useState([]);
+  
   // Estado para simular carga mínima
   const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
 
-  // UseEffect para manejar el estado de balanceo y la carga mínima
+  // 🛑 CAMBIO 2: Lógica de carga/simulación
   useEffect(() => {
+    // Si la data está cargada (loading: false, por caché o fetch), desactivamos la simulación inmediatamente.
+    if (!loading) {
+      setIsSimulatedLoading(false);
+      return;
+    }
+    
+    // Si aún está cargando, aplicamos la simulación de 1 segundo para la UX de primera carga.
     const timer = setTimeout(() => {
-      setIsSimulatedLoading(false); // Desactiva la carga simulada después de 1 segundo
+      setIsSimulatedLoading(false); 
     }, 1000);
 
+    return () => clearTimeout(timer);
+  }, [loading]); // Se ejecuta cuando el estado de loading cambia
+
+
+  // UseEffect para manejar el estado de balanceo (tu lógica existente)
+  useEffect(() => {
     if (cart.length > 0) {
       const totalProductsBalanceo = getTotalProducts(cart); // Calcula los productos únicos
       // Abre el carrito solo si no está visible
@@ -51,15 +66,14 @@ const Home = () => {
         toggleBalanceo(true);
       }
 
-      return () => clearTimeout(timer); // Limpiar el temporizador al desmontar el componente
+      // No necesitamos el timer de 1s aquí, ya lo maneja el otro useEffect
+      // return () => clearTimeout(timer); // Eliminado
     }
-
-    return () => clearTimeout(timer); // Limpiar el temporizador al desmontar el componente
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
-  // Filtrar productos por talla seleccionada
+  // Filtrar productos por talla seleccionada (BASE DE DATOS)
   const filteredProducts = useMemo(() => {
-    if (!selectedSizes.length) return products; // Si no hay tallas seleccionadas, devolver todos los productos
+    if (!selectedSizes.length || !products) return products; // Si no hay tallas seleccionadas, devolver todos los productos
 
     return products.filter(
       (product) =>
@@ -67,30 +81,26 @@ const Home = () => {
     );
   }, [selectedSizes, products]); // Dependemos tanto de `selectedSizes` como de `products`
 
-  // Obtener el total de productos filtrados usando useMemo
+  // 🛑 CAMBIO 3: useEffect para sincronizar `products` con `listProduct` y aplicar el filtro de tipo
   useEffect(() => {
-    setListProduct(products);
-  }, [products]);
+    // 1. Empezamos con los productos filtrados por talla
+    let productsToShow = filteredProducts;
+
+    // 2. Si hay un filtro de tipo seleccionado, aplicamos el filtro de tipo a los ya filtrados por talla
+    if (typeSelectedFilter) {
+      productsToShow = productsToShow.filter(product => product.type.id === typeSelectedFilter.id);
+    }
+    
+    // 3. Sincronizamos el estado local.
+    setListProduct(productsToShow || []);
+  }, [products, filteredProducts, typeSelectedFilter]); // Depende de la data base y los filtros
 
   const filterByType = ((type) => {
 
-    // If the same type is selected, clear the filter
-    if (type?.id === typeSelectedFilter?.id) {
-      setTypeSelectedFilter(null);
-      setListProduct(products);
-      return;
-    }
+    const newType = type?.id === typeSelectedFilter?.id ? null : type;
+    setTypeSelectedFilter(newType);
 
-    // If a new type is selected, filter the products
-    setTypeSelectedFilter(type);
-    let allProducts = [];
-
-    allProducts = [...products].filter((product) => {
-      if (product.type.id === type.id) {
-        return product;
-      }
-    });
-    setListProduct(allProducts);
+    // 🛑 NOTA: La sincronización (setListProduct) ahora se hace en el useEffect (CAMBIO 3)
   })
 
 
@@ -115,15 +125,21 @@ const Home = () => {
       </div>
 
       <div className="row">
-        {listProduct?.length > 0 && !loading && !isSimulatedLoading && (
-          <div className="col-12">
-            <ProductsList products={listProduct} />
-          </div>
-        )}
-        {(!loading && !isSimulatedLoading && listProduct?.length === 0) && (
-          <div className="col-12">
-            <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
-          </div>
+        {/* 🛑 CAMBIO 4: Nueva lógica de visualización */}
+        {loading && isSimulatedLoading ? (
+            <div className="col-12 text-center my-5">Cargando productos...</div>
+        ) : (
+            <>
+                {listProduct?.length > 0 ? (
+                    <div className="col-12">
+                        <ProductsList products={listProduct} />
+                    </div>
+                ) : (
+                    <div className="col-12">
+                        <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
+                    </div>
+                )}
+            </>
         )}
       </div>
     </div>

@@ -76,8 +76,6 @@ const useCartStore = create((set) => ({
         areOptionsEqual(item.options, product.options)
       ));
 
-      console.log("Carrito actual:", state.cart);
-
       // 2. Si el producto ya existe en el carrito (mismo ID y mismas opciones), incrementa la cantidad
       if (existingProduct) {
         return {

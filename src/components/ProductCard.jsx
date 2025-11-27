@@ -11,14 +11,6 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCartStore();
   const navigate = useNavigate();
 
-  // 🛑 ELIMINAMOS EL ESTADO DE selectedOption ya que no se usará en esta tarjeta.
-  console.log("product");
-  console.log(product);
-
-  // 🛑 VERIFICAR si el producto tiene opciones asociadas
-  const hasOptions = product?.has_options;
-
-
   // FUNCIÓN DE NAVEGACIÓN
   const handleNavigation = () => {
     // 1. Convertir el ID numérico a string.
