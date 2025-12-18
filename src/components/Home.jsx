@@ -31,7 +31,7 @@ const Home = () => {
 
   // 🛑 CAMBIO 1: Inicialización simple, el useEffect se encargará de llenarlo con caché si existe
   const [listProduct, setListProduct] = useState([]);
-  
+
   // Estado para simular carga mínima
   const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
 
@@ -42,10 +42,10 @@ const Home = () => {
       setIsSimulatedLoading(false);
       return;
     }
-    
+
     // Si aún está cargando, aplicamos la simulación de 1 segundo para la UX de primera carga.
     const timer = setTimeout(() => {
-      setIsSimulatedLoading(false); 
+      setIsSimulatedLoading(false);
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -90,7 +90,7 @@ const Home = () => {
     if (typeSelectedFilter) {
       productsToShow = productsToShow.filter(product => product.type.id === typeSelectedFilter.id);
     }
-    
+
     // 3. Sincronizamos el estado local.
     setListProduct(productsToShow || []);
   }, [products, filteredProducts, typeSelectedFilter]); // Depende de la data base y los filtros
@@ -105,18 +105,26 @@ const Home = () => {
 
 
   return (
-    <div className="container mt-5 mb-5">
+    <div className="container mt-5 mb-0">
       <TitleTypeWriter />
 
       <div
-        className="d-flex flex-wrap justify-content-center gap-3 mb-0 mt-2 p-3 rounded shadow-sm"
-        style={{ backgroundColor: '#c7d088' }} // Color de fondo claro para resaltar
+        className="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-0 mt-0 p-2 p-md-3 rounded shadow-sm"
+        style={{ backgroundColor: '#c7d088' }}
       >
         {listTypes?.map((type) => (
           <button
             key={type.id}
             type="button"
-            className={`btn btn-lg ${type.id === typeSelectedFilter?.id ? "btn-dark" : "btn-outline-dark"}`}
+            className={`btn ${
+              // btn-sm en móvil para ahorrar espacio, normal en escritorio
+              window.innerWidth < 768 ? "btn-sm" : "btn-md"
+              } ${type.id === typeSelectedFilter?.id ? "btn-dark" : "btn-outline-dark"
+              } flex-grow-0 text-nowrap`} // Evita que el texto se rompa en dos líneas
+            style={{
+              borderRadius: '20px', // Estilo más moderno y compacto
+              fontSize: window.innerWidth < 768 ? '0.85rem' : '1rem'
+            }}
             onClick={() => filterByType(type)}
           >
             {type?.name}
@@ -127,19 +135,19 @@ const Home = () => {
       <div className="row">
         {/* 🛑 CAMBIO 4: Nueva lógica de visualización */}
         {loading && isSimulatedLoading ? (
-            <div className="col-12 text-center my-5">Cargando productos...</div>
+          <div className="col-12 text-center my-5">Cargando productos...</div>
         ) : (
-            <>
-                {listProduct?.length > 0 ? (
-                    <div className="col-12">
-                        <ProductsList products={listProduct} />
-                    </div>
-                ) : (
-                    <div className="col-12">
-                        <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
-                    </div>
-                )}
-            </>
+          <>
+            {listProduct?.length > 0 ? (
+              <div className="col-12">
+                <ProductsList products={listProduct} />
+              </div>
+            ) : (
+              <div className="col-12">
+                <p className="text-center">No hay productos disponibles para los filtros seleccionados.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

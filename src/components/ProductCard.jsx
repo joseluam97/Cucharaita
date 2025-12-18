@@ -7,6 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { Base64 } from 'js-base64';
 
 const ProductCard = ({ product }) => {
+  // Detectar móvil para ajustes finos de UI
+  const isMobile = window.innerWidth < 768;
+
   const { addToCart } = useCartStore();
   const navigate = useNavigate();
 
@@ -32,22 +35,16 @@ const ProductCard = ({ product }) => {
   return (
     <div className="text-decoration-none text-dark h-100">
       <div className="card custom-card h-100 d-flex flex-column shadow-sm">
-
-        {/* AREA DE NAVEGACIÓN */}
-        <div
-          className="cursor-pointer flex-grow-1"
-          onClick={handleNavigation}
-        >
+        <div className="cursor-pointer flex-grow-1" onClick={handleNavigation}>
           <div className="position-relative">
-            {/* 🛑 CAMBIO CLAVE: Contenedor con altura fija y object-fit */}
             <img
               src={product.image}
               className="card-img-top"
               alt={product.name}
               style={{ 
-                height: "250px",      // Altura fija para uniformidad
-                objectFit: "cover",   // Recorta la imagen para llenar el espacio sin deformarse
-                width: "100%"         // Asegura que ocupe todo el ancho
+                height: isMobile ? "150px" : "250px", 
+                objectFit: "cover",
+                width: "100%"
               }}
             />
             <span className="badge custom-badge position-absolute top-0 end-0 m-2">
@@ -55,29 +52,39 @@ const ProductCard = ({ product }) => {
             </span>
           </div>
 
-          <div className="card-body d-flex flex-column pb-2">
-            <h5 className="card-title mb-2" style={{ fontSize: "1.1rem" }}>
+          <div className="card-body d-flex flex-column p-2">
+            <h5 className="card-title mb-1" style={{ fontSize: isMobile ? "0.9rem" : "1.1rem" }}>
                 {product.name}
             </h5>
 
-            <div className="mt-auto pt-3">
-              <p className="mb-0 fs-5">
-                <strong>Precio:</strong> {product.price} €
+            <div className="mt-auto pt-2">
+              <p className="mb-0 fw-bold" style={{ fontSize: isMobile ? "0.85rem" : "1.1rem" }}>
+                {product.price} €
               </p>
             </div>
           </div>
         </div>
 
-        {/* BOTÓN DE ACCIÓN */}
-        <div className="card-footer bg-white border-0 pt-0 pb-3 px-3">
+        <div className="card-footer bg-white border-0 pt-0 pb-3 px-1"> {/* Padding mínimo en footer para móvil */}
           <button
-            className={`btn w-100 ${product?.has_options ? 'btn-outline-dark' : 'btn-cart'}`}
+            className={`btn w-100 btn-sm d-flex align-items-center justify-content-center gap-1 ${product?.has_options ? 'btn-outline-dark' : 'btn-cart'}`}
             onClick={handleButtonAction}
+            style={{ 
+              fontSize: isMobile ? "0.68rem" : "0.85rem", // Fuente un poco más pequeña en móvil para que quepa el texto
+              paddingLeft: "2px",
+              paddingRight: "2px"
+            }}
           >
             {product?.has_options ? (
-              <>Seleccionar opciones &nbsp; <BsBoxSeam /></>
+              <>
+                <span>Seleccionar opciones</span> 
+                <BsBoxSeam size={isMobile ? 12 : 16} />
+              </>
             ) : (
-              <>Agregar al carrito &nbsp; <BsCartPlus /></>
+              <>
+                <span>Agregar al carrito</span> 
+                <BsCartPlus size={isMobile ? 14 : 18} />
+              </>
             )}
           </button>
         </div>
