@@ -197,7 +197,6 @@ const ProductDetail = () => {
 
     return (
         <div className="container my-5">
-            {/* Breadcrumb omitido por brevedad, mantener el tuyo */}
             
             <div className="row">
                 <div className="col-md-6 mb-4">
@@ -214,7 +213,6 @@ const ProductDetail = () => {
                         {precioWithAdd !== product.price && <small className="text-muted text-decoration-line-through ms-2 fs-6">{Number(product.price).toFixed(2)} €</small>}
                     </div>
 
-                    {/* SELECTOR DE OPCIONES DISPONIBLES */}
                     {listOptionsProduct.map((group) => (
                         <div key={group.id} className="mb-4 p-3 border rounded shadow-sm bg-white">
                             <h6 className="fw-bold d-flex justify-content-between align-items-center">
@@ -247,7 +245,6 @@ const ProductDetail = () => {
                         </div>
                     ))}
 
-                    {/* RESUMEN DE ELEMENTOS SELECCIONADOS (LISTA INFERIOR) */}
                     {Object.values(selectedGroupOptions).some(s => Array.isArray(s) ? s.length > 0 : !!s) && (
                         <div className="mb-4">
                             <p className="fw-bold mb-2">Elementos añadidos:</p>
@@ -278,7 +275,6 @@ const ProductDetail = () => {
                         </div>
                     )}
 
-                    {/* ACCIONES FINALES */}
                     <div className="d-flex align-items-center gap-3 pt-3 border-top mt-4">
                         <div className="d-flex align-items-center border rounded">
                             <button className="btn btn-link text-dark py-2" onClick={decreaseQuantity} disabled={quantity <= 1}><BsDashCircle /></button>

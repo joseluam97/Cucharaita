@@ -65,7 +65,7 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        <div className="card-footer bg-white border-0 pt-0 pb-3 px-1"> {/* Padding mínimo en footer para móvil */}
+        <div className="card-footer bg-white border-0 pt-0 pb-3 px-1">
           <button
             className={`btn w-100 btn-sm d-flex align-items-center justify-content-center gap-1 ${product?.has_options ? 'btn-outline-dark' : 'btn-cart'}`}
             onClick={handleButtonAction}

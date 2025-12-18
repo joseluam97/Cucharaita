@@ -31,28 +31,6 @@ const SizeFilter = ({ products, totalFiltered }) => {
   return (
     <div className="mb-4">
       <LoadingBar color="#ff9c08" ref={ref} shadow={true} />
-
-      {/* Etiqueta y contador 
-      <h6 className="mb-2">
-        Tipos de productos <span className="fw-bold">({totalFiltered})</span>
-      </h6>
-
-      <div className="d-flex flex-wrap align-items-center gap-2">
-        {sizes.map((size) => (
-          <button
-            key={size}
-            type="button"
-            className={selectedSizes.includes(size)
-              ? "btn-dark" // Opción seleccionada
-              : "btn-outline-dark" // Opción no seleccionada
-            }
-            onClick={() => handleSizeClick(size)}
-            aria-pressed={selectedSizes.includes(size)}
-          >
-            {size}
-          </button>
-        ))}
-      </div>*/}
     </div>
   );
 };

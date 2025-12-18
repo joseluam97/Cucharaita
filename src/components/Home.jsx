@@ -29,15 +29,12 @@ const Home = () => {
   const { data: products, loading, error } = useProducts({});
   const { data: listTypes } = useTypes({});
 
-  // 🛑 CAMBIO 1: Inicialización simple, el useEffect se encargará de llenarlo con caché si existe
   const [listProduct, setListProduct] = useState([]);
 
   // Estado para simular carga mínima
   const [isSimulatedLoading, setIsSimulatedLoading] = useState(true);
 
-  // 🛑 CAMBIO 2: Lógica de carga/simulación
   useEffect(() => {
-    // Si la data está cargada (loading: false, por caché o fetch), desactivamos la simulación inmediatamente.
     if (!loading) {
       setIsSimulatedLoading(false);
       return;
@@ -52,7 +49,6 @@ const Home = () => {
   }, [loading]); // Se ejecuta cuando el estado de loading cambia
 
 
-  // UseEffect para manejar el estado de balanceo (tu lógica existente)
   useEffect(() => {
     if (cart.length > 0) {
       const totalProductsBalanceo = getTotalProducts(cart); // Calcula los productos únicos
@@ -66,8 +62,6 @@ const Home = () => {
         toggleBalanceo(true);
       }
 
-      // No necesitamos el timer de 1s aquí, ya lo maneja el otro useEffect
-      // return () => clearTimeout(timer); // Eliminado
     }
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
@@ -81,7 +75,6 @@ const Home = () => {
     );
   }, [selectedSizes, products]); // Dependemos tanto de `selectedSizes` como de `products`
 
-  // 🛑 CAMBIO 3: useEffect para sincronizar `products` con `listProduct` y aplicar el filtro de tipo
   useEffect(() => {
     // 1. Empezamos con los productos filtrados por talla
     let productsToShow = filteredProducts;
@@ -93,14 +86,12 @@ const Home = () => {
 
     // 3. Sincronizamos el estado local.
     setListProduct(productsToShow || []);
-  }, [products, filteredProducts, typeSelectedFilter]); // Depende de la data base y los filtros
+  }, [products, filteredProducts, typeSelectedFilter]);
 
   const filterByType = ((type) => {
-
     const newType = type?.id === typeSelectedFilter?.id ? null : type;
     setTypeSelectedFilter(newType);
 
-    // 🛑 NOTA: La sincronización (setListProduct) ahora se hace en el useEffect (CAMBIO 3)
   })
 
 
@@ -117,7 +108,6 @@ const Home = () => {
             key={type.id}
             type="button"
             className={`btn ${
-              // btn-sm en móvil para ahorrar espacio, normal en escritorio
               window.innerWidth < 768 ? "btn-sm" : "btn-md"
               } ${type.id === typeSelectedFilter?.id ? "btn-dark" : "btn-outline-dark"
               } flex-grow-0 text-nowrap`} // Evita que el texto se rompa en dos líneas
@@ -133,7 +123,6 @@ const Home = () => {
       </div>
 
       <div className="row">
-        {/* 🛑 CAMBIO 4: Nueva lógica de visualización */}
         {loading && isSimulatedLoading ? (
           <div className="col-12 text-center my-5">Cargando productos...</div>
         ) : (

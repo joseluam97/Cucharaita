@@ -157,9 +157,7 @@ const SidebarOffCanvas = () => {
         )}
       </div>
 
-      {/* 🛑 PIE DEL CARRITO (SIEMPRE VISIBLE) */}
       <div className="offcanvas-footer p-3 bg-light border-top">
-        {/* SECCIÓN DE CUPÓN FIJA ABAJO */}
         <div className="mb-3">
           <label className="small fw-bold mb-1">Cupón de descuento</label>
           <div className="input-group input-group-sm">
@@ -177,7 +175,6 @@ const SidebarOffCanvas = () => {
           {couponMessage && <div className={`x-small mt-1 fw-bold ${discountAmount > 0 ? 'text-success' : 'text-danger'}`}>{couponMessage}</div>}
         </div>
 
-        {/* RESUMEN DE PRECIOS */}
         {discountAmount > 0 && (
           <div className="d-flex justify-content-between mb-1 text-danger fw-bold">
             <span>Descuento:</span>

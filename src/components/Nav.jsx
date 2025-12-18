@@ -1,7 +1,7 @@
 import logo from "../assets/imgs/logo_reducido.png";
 import MyCart from "./MyCart";
 import { CiMenuFries } from "react-icons/ci";
-import { Link } from "react-router-dom"; // Usaremos Link para navegación en React
+import { Link } from "react-router-dom"; 
 
 const Nav = () => {
     return (

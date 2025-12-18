@@ -49,13 +49,10 @@ const App = () => {
       
       <main>
         <Routes>
-          {/* Ruta principal (Home) */}
           <Route path="/" element={<Home />} /> 
           
-          {/* Ruta para el detalle del producto */}
           <Route path="/product/:id" element={<ProductDetail />} />
           
-          {/* Opcional: Ruta 404 */}
           <Route path="*" element={
               <div className="container mt-5 text-center">
                   <h1>404</h1>
@@ -65,7 +62,6 @@ const App = () => {
         </Routes>
       </main>
 
-      {/* El Sidebar Offcanvas se gestiona desde App */}
       {isVisible && <SidebarOffCanvas />}
 
       <Footer />

@@ -19,7 +19,7 @@ const useOptions = ({ id_product = null }) => {
           .eq('product', id_product)
           .order('id', { ascending: true });
 
-        if (error) throw error; // Manejo explícito de error de Supabase
+        if (error) throw error;
 
         setData(data);
       } catch (e) {
