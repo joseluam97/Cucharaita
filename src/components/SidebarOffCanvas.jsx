@@ -16,7 +16,6 @@ const SidebarOffCanvas = () => {
 
 
   useEffect(() => {
-    console.log("-cart modified-");
     setCouponCode("");
     setDiscountAmount(0);
     setCouponMessage("");
@@ -98,7 +97,7 @@ const SidebarOffCanvas = () => {
   };
 
   const generateWhatsAppMessage = () => {
-    let message = "Hola Cucharaita, saludos. \n\n*Listado de productos:*\n";
+    let message = "Hola Cucharaita, saludos. \n\n*Listado de productos:*";
     cart.forEach((product) => {
       message += `\n● *${product.name}* x${product.quantity}: *${(product.price * product.quantity).toFixed(2)}€*\n`;
       const grouped = groupProductOptions(product.options);
@@ -109,7 +108,7 @@ const SidebarOffCanvas = () => {
       });
     });
     if (discountAmount > 0) {
-      message += `\n*Descuento aplicado: -${discountAmount.toFixed(2)} €*`;
+      message += `\n*Descuento aplicado(${couponCode}): -${discountAmount.toFixed(2)} €*`;
     }
     message += `\n\n*Total a pagar: ${calculateTotal().toFixed(2)} €*`;
     return encodeURIComponent(message);
@@ -152,7 +151,7 @@ const SidebarOffCanvas = () => {
               <div className="col-3 text-end">
                 <div className="small text-muted">{product.quantity}x</div>
                 <div className="fw-bold">{(product.price * product.quantity).toFixed(2)}€</div>
-                <button className="btn btn-sm text-danger p-0 mt-2" onClick={() => removeFromCart(product.id)}>
+                <button className="btn btn-sm text-danger p-0 mt-2" onClick={() => removeFromCart(product.cartItemId)}>
                   <RiDeleteBin6Line />
                 </button>
               </div>
