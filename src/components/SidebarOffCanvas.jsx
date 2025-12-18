@@ -45,7 +45,7 @@ const SidebarOffCanvas = () => {
       const coupon = discountData?.[0];
       console.log(subtotal);
       console.log(coupon.min_amount);
-      console.log(subtotal >= coupon.min_amount);
+      console.log(Number(subtotal) >= Number(coupon.min_amount));
 
       // Ilegal Condition(1): Coupon must exist
       if (coupon == null) {
@@ -62,7 +62,7 @@ const SidebarOffCanvas = () => {
         return;
       }
       // Ilegal Condition(3): Subtotal must be equal or greater than min_amount
-      if (coupon == null) {
+      if (Number(subtotal) < Number(coupon.min_amount)) {
         setDiscountAmount(0);
         setCouponMessage("❌ Este cupón requiere un pedido de minimo " + coupon.min_amount + "€.");
         setLoadingDiscount(false);
