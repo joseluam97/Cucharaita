@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // 👈 Importar useState
+import React, { useState, useEffect, useCallback } from "react";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { FaWhatsapp } from "react-icons/fa";
 import useCartStore from "../store/cartStore";
@@ -6,277 +6,197 @@ import useOffcanvasStore from "../store/offcanvasStore";
 import fetchDiscount from "../hooks/useDisconts";
 
 const SidebarOffCanvas = () => {
-  // Acceder al store de cart y usar sus funciones
   const { cart, removeFromCart } = useCartStore();
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
 
-  // 1. ESTADO PARA CUPÓN
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [loadingDiscount, setLoadingDiscount] = useState(false);
 
-  // BBDD simple de cupones de descuento (simulación)
-  const availableCoupons = {
-    "WELCOME10": { type: "percentage", value: 10, min: 20 }, // 10% de descuento, mínimo 20€
-    "FREE5": { type: "fixed", value: 5, min: 30 }, // 5€ de descuento fijo, mínimo 30€
-  };
 
-  // Calcula el subtotal
+  useEffect(() => {
+    console.log("-cart modified-");
+    setCouponCode("");
+    setDiscountAmount(0);
+    setCouponMessage("");
+    setLoadingDiscount(false);
+  }, [cart]);
+
   const calculateSubtotal = () => {
     return cart.reduce((acc, p) => acc + p.price * p.quantity, 0);
   };
 
-  // Calcula el total con descuento aplicado
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal() - discountAmount;
-    return Math.max(0, subtotal - discountAmount); // Asegura que el total no sea negativo
+    const subtotal = calculateSubtotal();
+    return Math.max(0, subtotal - discountAmount);
   };
 
-  // 2. LÓGICA PARA APLICAR CUPÓN
-  const applyCoupon = async () => { // 👈 Marcar como ASYNC
+  const applyCoupon = async () => {
     const code = couponCode.toUpperCase();
     const subtotal = calculateSubtotal();
-
     if (!code) {
-      setCouponMessage("Introduce un código de cupón.");
-      setDiscountAmount(0);
+      setCouponMessage("Introduce un código.");
       return;
     }
-
     setLoadingDiscount(true);
-    setCouponMessage("Buscando cupón...");
-    setDiscountAmount(0);
-
     try {
-      // 🛑 LLAMADA DIRECTA A LA FUNCIÓN ASÍNCRONA (CORRECTO)
       const { data: discountData, error: discountError } = await fetchDiscount(code);
+      if (discountError) throw new Error();
+      const coupon = discountData?.[0];
+      console.log(subtotal);
+      console.log(coupon.min_amount);
+      console.log(subtotal >= coupon.min_amount);
 
-      if (discountError) {
-        setCouponMessage("Error de conexión al servidor.");
+      // Ilegal Condition(1): Coupon must exist
+      if (coupon == null) {
+        setDiscountAmount(0);
+        setCouponMessage("❌ Cupón no válido.");
+        setLoadingDiscount(false);
+        return;
+      }
+      // Ilegal Condition(2): Coupon not active
+      if (coupon.active == false) {
+        setDiscountAmount(0);
+        setCouponMessage("❌ El cupón no se encuentra activo.");
+        setLoadingDiscount(false);
+        return;
+      }
+      // Ilegal Condition(3): Subtotal must be equal or greater than min_amount
+      if (coupon == null) {
+        setDiscountAmount(0);
+        setCouponMessage("❌ Este cupón requiere un pedido de minimo " + coupon.min_amount + "€.");
+        setLoadingDiscount(false);
         return;
       }
 
-      // Supongamos que la respuesta es un array, y solo nos importa el primer resultado
-      const coupon = discountData && discountData.length > 0 ? discountData[0] : null;
-
-      if (coupon) {
-        // CUPÓN ENCONTRADO
-        if (subtotal < coupon.min_amount) { // Ajusta 'min_amount' al nombre de tu columna
-          setCouponMessage(`Mínimo de compra de ${coupon.min_amount} € requerido.`);
-          return;
-        }
-
-        let discount = 0;
-        if (coupon.type === "PERCENTAGE") {
-          discount = subtotal * (coupon.import / 100);
-        } else if (coupon.type === "IMPORT") {
-          discount = coupon.import;
-        }
-
-        setDiscountAmount(discount);
-        setCouponMessage(`✅ Cupón aplicado: ${code}. Descuento de ${discount.toFixed(2)} €.`);
-
-      } else {
-        // CUPÓN NO ENCONTRADO
-        setCouponMessage("❌ Cupón no válido.");
-      }
+      let discount = coupon.type === "PERCENTAGE" ? subtotal * (coupon.import / 100) : coupon.import;
+      setDiscountAmount(discount);
+      setCouponMessage(`✅ Cupón aplicado: -${discount.toFixed(2)}€`);
 
     } catch (e) {
-      setCouponMessage("Ocurrió un error inesperado.");
-      console.error(e);
+      setCouponMessage("Error al validar cupón.");
     } finally {
       setLoadingDiscount(false);
     }
   };
 
-  // 3. GENERADOR DE MENSAJE DE WHATSAPP (Actualizado con Total)
-  const generateWhatsAppMessage = () => {
-    let message = "Hola Cucharaita, saludos. \n\nListado de productos:\n";
-
-    // Lista de productos
-    cart.forEach((product) => {
-      const optionText = product.selectedOption ? ` (${product.selectedOption})` : "";
-      message += `● ${product.name}${optionText} x${product.quantity}: *${(product.price * product.quantity).toFixed(2)}€*\n`;
+  const groupProductOptions = (optionsObj) => {
+    const grouped = {};
+    if (!optionsObj) return grouped;
+    Object.values(optionsObj).forEach((val) => {
+      const optionsArray = Array.isArray(val) ? val : [val];
+      optionsArray.forEach(opt => {
+        if (!opt) return;
+        if (!grouped[opt.name]) {
+          grouped[opt.name] = { count: 0, add_price: opt.add_price || 0 };
+        }
+        grouped[opt.name].count += 1;
+      });
     });
+    return grouped;
+  };
 
-    // Resumen de precios
-    const subtotal = calculateSubtotal().toFixed(2);
-    const total = calculateTotal().toFixed(2);
-
-    message += `\n*Subtotal: ${subtotal} €*`;
-
+  const generateWhatsAppMessage = () => {
+    let message = "Hola Cucharaita, saludos. \n\n*Listado de productos:*\n";
+    cart.forEach((product) => {
+      message += `\n● *${product.name}* x${product.quantity}: *${(product.price * product.quantity).toFixed(2)}€*\n`;
+      const grouped = groupProductOptions(product.options);
+      Object.entries(grouped).forEach(([name, data]) => {
+        const totalOptionPrice = (data.count * data.add_price).toFixed(2);
+        const priceText = data.add_price > 0 ? ` (=${totalOptionPrice} €)` : "";
+        message += `   └ ${data.count > 1 ? `${data.count}x ` : ""}${name}${priceText}\n`;
+      });
+    });
     if (discountAmount > 0) {
-      message += `\n*Descuento (${couponCode.toUpperCase()}): -${discountAmount.toFixed(2)} €*`;
+      message += `\n*Descuento aplicado: -${discountAmount.toFixed(2)} €*`;
     }
-
-    message += `\n*Total a pagar: ${total} €*`;
-
+    message += `\n\n*Total a pagar: ${calculateTotal().toFixed(2)} €*`;
     return encodeURIComponent(message);
   };
 
-  const getOptionsSelectedProducts = (productCart) => {
-    let listOptions = [];
-    if (!productCart?.options) {
-      return null;
-    }
-
-    Object.values(productCart.options).forEach((options, indexGroup) => {
-      const generateKey = (optionId) => `option-${productCart.id}-${optionId}-${indexGroup}`;
-
-      if (Array.isArray(options)) {
-        // Opciones múltiples
-        options.forEach(option => {
-          listOptions.push(
-            <p className="mt-1 mb-0 detalles-product" key={generateKey(option.id)}>
-              {option.name} {option.add_price > 0 ? `( +${option.add_price.toFixed(2)} € )` : ''}
-            </p>
-          );
-        });
-      } else {
-        // Opción única
-        listOptions.push(
-          <p className="mb-2 detalles-product" key={generateKey(options.id)}>
-            {options.name} {options.add_price > 0 ? `( +${options.add_price.toFixed(2)} € )` : ''}
-          </p>
-        );
-      }
+  const renderGroupedOptionsUI = (productCart) => {
+    const grouped = groupProductOptions(productCart.options);
+    return Object.entries(grouped).map(([name, data], index) => {
+      const totalOptionPrice = (data.count * data.add_price).toFixed(2);
+      return (
+        <p className="mb-0 detalles-product text-muted small" key={`${productCart.id}-${index}`}>
+          • {data.count > 1 && <strong>{data.count}x </strong>}
+          {name}
+          {data.add_price > 0 && <span className="ms-1">(= {totalOptionPrice} €)</span>}
+        </p>
+      );
     });
-
-    return listOptions;
   };
 
   return (
-    <div
-      className={`offcanvas offcanvas-end px-1 ${isVisible ? "show offcanvas-open" : ""
-        }`}
-      tabIndex="-1"
-      id="offcanvasRight"
-      aria-labelledby="offcanvasRightLabel"
-    >
-      <div className="offcanvas-header">
-        <h5
-          className="offcanvas-title text-uppercase text-center fw-bold"
-          id="offcanvasRightLabel"
-        >
-          Mi carrito de compras
-        </h5>
-        <button
-          type="button"
-          className="btn-close"
-          onClick={toggleOffcanvas}
-          aria-label="Close"
-        ></button>
+    <div className={`offcanvas offcanvas-end ${isVisible ? "show offcanvas-open" : ""}`} tabIndex="-1">
+      <div className="offcanvas-header border-bottom">
+        <h5 className="fw-bold mb-0">MI CARRITO</h5>
+        <button type="button" className="btn-close" onClick={toggleOffcanvas}></button>
       </div>
 
       <div className="offcanvas-body">
-        {/* Contenido del carrito (productos) */}
         {cart.length === 0 ? (
-          <p className="text-center mt-5">No hay productos en el carrito.</p>
+          <p className="text-center mt-5">Tu carrito está vacío.</p>
         ) : (
-          cart.map((productCart) => (
-            <div
-              className="row align-items-center mb-2 py-1"
-              style={{ borderBottom: "1px dashed rgb(176, 176, 176)" }}
-              key={productCart.id}
-            >
-              <div className="col-3">
-                <img
-                  src={productCart.image}
-                  className="card-img-top border-radius-5"
-                  alt={productCart.name}
-                />
+          cart.map((product, index) => (
+            <div className="row mb-3 pb-3 border-bottom align-items-center" key={`${product.id}-${index}`}>
+              <div className="col-2">
+                <img src={product.image} className="img-fluid rounded" alt={product.name} />
               </div>
-              <div className="col-5">
-                <h4 className="mb-0 title-product">{productCart.name}</h4>
-                {getOptionsSelectedProducts(productCart)}
+              <div className="col-7">
+                <h6 className="fw-bold mb-1">{product.name}</h6>
+                {renderGroupedOptionsUI(product)}
               </div>
-              <div className="col-4 text-end">
-                <span className="fw-bold">
-                  <span className="fs-6 color-gris">
-                    {productCart.quantity}x
-                  </span>
-                  <strong className="fs-5 precio">{(productCart.price * productCart.quantity).toFixed(2)} €</strong>
-                </span>
-                <button
-                  className="btn mt-3 delete-product"
-                  onClick={() => removeFromCart(productCart.id)}
-                >
+              <div className="col-3 text-end">
+                <div className="small text-muted">{product.quantity}x</div>
+                <div className="fw-bold">{(product.price * product.quantity).toFixed(2)}€</div>
+                <button className="btn btn-sm text-danger p-0 mt-2" onClick={() => removeFromCart(product.id)}>
                   <RiDeleteBin6Line />
                 </button>
               </div>
             </div>
           ))
         )}
-
-        {/* 4. NUEVO: SECCIÓN DE CUPÓN */}
-        {cart.length > 0 && (
-          <div className="mt-4 pt-3 border-top">
-            <h5 className="mb-3 fw-bold">Aplicar Cupón</h5>
-            <div className="input-group mb-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Código de cupón"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                disabled={loadingDiscount} // Deshabilitar mientras busca
-              />
-              <button
-                className="btn btn-outline-secondary"
-                type="button"
-                onClick={applyCoupon}
-                disabled={loadingDiscount} // Deshabilitar mientras busca
-              >
-                {loadingDiscount ? 'Cargando...' : 'Aplicar'}
-              </button>
-            </div>
-            {couponMessage && (
-              <p className={`small fw-bold ${discountAmount > 0 ? 'text-success' : 'text-danger'}`}>
-                {couponMessage}
-              </p>
-            )}
-          </div>
-        )}
-        {/* FIN SECCIÓN DE CUPÓN */}
-
       </div>
 
-      <div className="offcanvas-footer mt-4 px-2">
-        {/* Mostrar descuento si aplica */}
+      {/* 🛑 PIE DEL CARRITO (SIEMPRE VISIBLE) */}
+      <div className="offcanvas-footer p-3 bg-light border-top">
+        {/* SECCIÓN DE CUPÓN FIJA ABAJO */}
+        <div className="mb-3">
+          <label className="small fw-bold mb-1">Cupón de descuento</label>
+          <div className="input-group input-group-sm">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Código"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+            />
+            <button className="btn btn-dark" onClick={applyCoupon} disabled={loadingDiscount}>
+              {loadingDiscount ? '...' : 'Aplicar'}
+            </button>
+          </div>
+          {couponMessage && <div className={`x-small mt-1 fw-bold ${discountAmount > 0 ? 'text-success' : 'text-danger'}`}>{couponMessage}</div>}
+        </div>
+
+        {/* RESUMEN DE PRECIOS */}
         {discountAmount > 0 && (
-          <div className="d-flex justify-content-between align-items-center mb-1">
-            <h5 className="mb-0 fw-bold text-muted">Descuento:</h5>
-            <span className="fw-bold fs-5 text-danger">
-              - {discountAmount.toFixed(2)} €
-            </span>
+          <div className="d-flex justify-content-between mb-1 text-danger fw-bold">
+            <span>Descuento:</span>
+            <span>-{discountAmount.toFixed(2)} €</span>
           </div>
         )}
 
-        {/* SUBTOTAL (Revisado para claridad) */}
-        <div className="d-flex justify-content-between align-items-center">
-
-          <h5 className="mb-0 fw-bold w-50">SUBTOTAL:</h5>
-
-          <span className="fw-bold fs-2 w-50 text-end">
-            {calculateTotal().toFixed(2)}
-            <span style={{ color: "#ff9c08" }}> €</span>
-          </span>
-
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="fw-bold mb-0">TOTAL:</h4>
+          <h2 className="fw-bold mb-0">{calculateTotal().toFixed(2)} €</h2>
         </div>
 
-        <p className="small text-muted text-end mt-0 mb-4">
-          Precio sin incluir envío.
-        </p>
-
         {cart.length > 0 && (
-          <a
-            href={`https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}`}
-            className="btn btn-comprar w-100"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FaWhatsapp /> &nbsp; Enviar pedido por WhatsApp
+          <a href={`https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}`} className="btn btn-success w-100 fw-bold py-2 shadow-sm" target="_blank" rel="noreferrer">
+            <FaWhatsapp className="me-2" size={20} /> ENVIAR PEDIDO
           </a>
         )}
       </div>

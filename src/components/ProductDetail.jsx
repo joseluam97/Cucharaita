@@ -140,12 +140,23 @@ const ProductDetail = () => {
 
     const validateAddToCart = useCallback(() => {
         if (quantity < 1) return setCanAddToCart(false);
+        
         if (listOptionsProduct.length > 0) {
-            const allRequiredSelected = listOptionsProduct.every(group => {
+            const allRequiredSatisfied = listOptionsProduct.every(group => {
                 const selection = selectedGroupOptions[group.id];
+                const limit = Number(group.option_select);
+
+                // Si tiene un límite (option_select > 0), debe ser exactamente ese número
+                if (limit > 0) {
+                    const currentCount = Array.isArray(selection) ? selection.length : (selection ? 1 : 0);
+                    return currentCount === limit;
+                }
+                
+                // Si limit es 0, basta con que haya algo seleccionado (si el grupo es obligatorio)
                 return selection && (Array.isArray(selection) ? selection.length > 0 : !!selection);
             });
-            setCanAddToCart(allRequiredSelected);
+            
+            setCanAddToCart(allRequiredSatisfied);
             return;
         }
         setCanAddToCart(true);
@@ -154,11 +165,24 @@ const ProductDetail = () => {
     useEffect(() => {
         validateAddToCart();
     }, [quantity, listOptionsProduct, selectedGroupOptions, validateAddToCart]);
-
+    
     const handleAddToCart = (e) => {
         e.stopPropagation();
         if (!canAddToCart) return;
-        addToCart({ ...product, price: precioWithAdd, options: selectedGroupOptions, quantity });
+
+        // Enviar al store
+        addToCart({ 
+            ...product, 
+            price: precioWithAdd, 
+            options: { ...selectedGroupOptions }, 
+            quantity: quantity 
+        });
+
+        // --- LIMPIEZA DE ESTADOS ---
+        setSelectedGroupOptions({}); // Resetea las opciones
+        setQuantity(1);             // Resetea la cantidad a 1
+        setPrecioWithAdd(product.price); // Resetea el precio visual al base
+        
     };
 
     // Auxiliar para contar cuántas veces se ha seleccionado una opción específica
