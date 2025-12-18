@@ -109,7 +109,7 @@ const Home = () => {
       <TitleTypeWriter />
 
       <div
-        className="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-0 mt-0 p-2 p-md-3 rounded shadow-sm"
+        className="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-2 mt-0 p-2 p-md-3 rounded shadow-sm"
         style={{ backgroundColor: '#c7d088' }}
       >
         {listTypes?.map((type) => (
