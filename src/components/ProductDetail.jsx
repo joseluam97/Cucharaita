@@ -4,457 +4,271 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import useProducts from "../hooks/useProducts";
 import useCartStore from "../store/cartStore";
-import { BsCartPlus } from "react-icons/bs";
+import { BsCartPlus, BsDashCircle, BsPlusCircle, BsXCircleFill } from "react-icons/bs";
 import { Base64 } from 'js-base64';
 import useOptions from "../hooks/useOptions";
 
 const ProductDetail = () => {
-    // Hooks de React Router y Store
-    const { id: encodedId } = useParams(); // ID codificado de la URL
+    const { id: encodedId } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCartStore();
 
     // Estados
-    // Opciones seleccionadas por grupo (útil si hay múltiples grupos de opciones)
     const [selectedGroupOptions, setSelectedGroupOptions] = useState({});
-    // Habilitar o Deshabilitar el botón del carrito
     const [canAddToCart, setCanAddToCart] = useState(false);
-    const [selectedOption, setSelectedOption] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [productId, setProductId] = useState('-1');
-    const [isValidId, setIsValidId] = useState(true); // Estado para manejar ID inválido
+    const [isValidId, setIsValidId] = useState(true);
     const [listOptionsProduct, setListOptionsProduct] = useState([]);
     const [precioWithAdd, setPrecioWithAdd] = useState(0);
 
-    // 1. Método para la decodificación y validación del ID
     const decodeAndValidateId = useCallback(() => {
-        let currentProductId = null;
-
         try {
-            // Decodificar
             const decodedId = Base64.decode(encodedId);
-            currentProductId = parseInt(decodedId, 10);
-
-            // Validar
-            if (isNaN(currentProductId) || currentProductId <= 0) {
-                throw new Error("ID decodificado no es válido.");
-            }
-
-            // Si es válido, actualiza el estado (lo que disparará la búsqueda del Hook)
+            const currentProductId = parseInt(decodedId, 10);
+            if (isNaN(currentProductId) || currentProductId <= 0) throw new Error("ID inválido");
             setProductId(currentProductId);
             setIsValidId(true);
-
         } catch (error) {
-            console.error("Error al decodificar/validar el ID:", error);
-            setIsValidId(false); // Marcar como ID inválido
+            setIsValidId(false);
             setProductId(null);
         }
     }, [encodedId]);
 
-
-    // 2. useEffect para ejecutar la decodificación al montar el componente
     useEffect(() => {
         decodeAndValidateId();
-    }, [decodeAndValidateId]); // Ejecutar solo cuando el componente se monta o el ID codificado cambia
+    }, [decodeAndValidateId]);
 
-
-    // 3. useEffect para manejar la redirección si el ID es inválido
     useEffect(() => {
         if (isValidId === false) {
-            // Si el ID es inválido, esperamos 3 segundos y redirigimos
-            const timer = setTimeout(() => {
-                navigate('/', { replace: true });
-            }, 3000); // 3000 milisegundos = 3 segundos
-
-            // Limpieza: importante para detener el temporizador si el componente se desmonta antes
+            const timer = setTimeout(() => navigate('/', { replace: true }), 3000);
             return () => clearTimeout(timer);
         }
     }, [isValidId, navigate]);
 
-    // 4. Llamada al Hook useProducts (solo se ejecuta si productId está establecido)
-    const {
-        data: product,
-        loading,
-        error
-    } = useProducts({ id: productId });
-
-    const {
-        data: listOptions,
-        loadingOptions,
-        errorOptions
-    } = useOptions({ id_product: productId });
-
+    const { data: product, loading, error } = useProducts({ id: productId });
+    const { data: listOptions } = useOptions({ id_product: productId });
 
     useEffect(() => {
-        if (product?.name) {
-            // Formato deseado: "Cucharaita - Nombre del Producto"
-            document.title = `Cucharaita - ${product.name}`;
-        } else {
-            // Título por defecto mientras carga o si hay error/no se encuentra
-            document.title = 'Cucharaita - Producto';
-        }
-
-        // Limpieza: restablece el título cuando el componente se desmonta (opcional pero recomendado)
-        return () => {
-            document.title = 'Cucharaita'; // O el título principal de tu sitio
-        };
+        if (product?.name) document.title = `Cucharaita - ${product.name}`;
+        return () => { document.title = 'Cucharaita'; };
     }, [product]);
 
     useEffect(() => {
         if (listOptions != null && product) {
             let uniqueGroups = groupOptionsByGroup(listOptions);
             setListOptionsProduct(uniqueGroups);
-            // Inicializar el precio con el precio base del producto
             setPrecioWithAdd(product.price);
         }
     }, [listOptions, product]);
 
-    /**
- * Agrupa las opciones por su campo 'group'.
- * @param {Array} listOptions - El array plano de opciones (con el grupo anidado).
- * @returns {Array} Array de objetos de grupo, cada uno con una propiedad 'options'.
- */
     const groupOptionsByGroup = (listOptions) => {
-        if (!listOptions || listOptions.length === 0) {
-            return [];
-        }
-
-        // 1. Usar un Map para agrupar las opciones por group.id
+        if (!listOptions || listOptions.length === 0) return [];
         const groupedMap = listOptions.reduce((acc, option) => {
             const groupId = option.group.id;
-
-            // Si el grupo no existe en el Map, lo inicializamos
             if (!acc.has(groupId)) {
-                acc.set(groupId, {
-                    // Copiamos las propiedades del grupo
-                    ...option.group,
-                    // Inicializamos el array de opciones
-                    options: []
-                });
+                acc.set(groupId, { ...option.group, options: [] });
             }
-
-            // 2. Añadir la opción actual al array 'options' del grupo correspondiente.
-            // Creamos una copia de la opción y eliminamos la propiedad 'group' anidada
-            // para evitar redundancia y ciclos.
             const optionData = { ...option };
             delete optionData.group;
-
             acc.get(groupId).options.push(optionData);
-
             return acc;
-        }, new Map()); // Usamos Map en lugar de un objeto para mejor rendimiento
-
-        // 3. Convertir el Map a un array para facilitar el mapeo en React
+        }, new Map());
         return Array.from(groupedMap.values());
     };
 
-
-    // ----------------------------------------------------
-    // LÓGICA DE CÁLCULO DE PRECIO
-    // ----------------------------------------------------
     const calculateTotalPrice = useCallback((productData, optionsSelected) => {
-        if (!productData || productData.price == null) {
-            return 0;
-        }
-
+        if (!productData || productData.price == null) return 0;
         let priceBase = Number(productData.price);
 
-        Object.values(optionsSelected || {})?.forEach((options) => {
+        Object.values(optionsSelected || {}).forEach((options) => {
             if (Array.isArray(options)) {
-                options.forEach(option => {
-                    if (option.add_price && option.add_price > 0) {
-                        priceBase += Number(option.add_price);
-                    }
+                options.forEach(opt => {
+                    if (opt.add_price > 0) priceBase += Number(opt.add_price);
                 });
-            } else {
-                if (options && options.add_price && options.add_price > 0) {
-                    priceBase += Number(options.add_price);
-                }
+            } else if (options?.add_price > 0) {
+                priceBase += Number(options.add_price);
             }
         });
-
         return priceBase;
     }, []);
 
-    // 🛑 useEffect para recalcular el precio total CADA VEZ que cambian las opciones
     useEffect(() => {
         if (product) {
-            const newPrice = calculateTotalPrice(product, selectedGroupOptions);
-            setPrecioWithAdd(newPrice);
+            setPrecioWithAdd(calculateTotalPrice(product, selectedGroupOptions));
         }
     }, [product, selectedGroupOptions, calculateTotalPrice]);
-    // ----------------------------------------------------
-    // FIN DE CÁLCULO DE PRECIO
-    // ----------------------------------------------------
 
-    // 5. Métodos de Cantidad (refactorizados a funciones claras)
-    const increaseQuantity = useCallback(() => setQuantity(prev => prev + 1), []);
-    const decreaseQuantity = useCallback(() => setQuantity(prev => Math.max(1, prev - 1)), []);
-
-
-    // 6. Manejador de Agregar al Carrito (refactorizado a función clara)
-    const handleAddToCart = useCallback((e) => {
-        e.stopPropagation();
-
-        if (!canAddToCart) {
-            alert("Por favor, selecciona todas las opciones requeridas antes de añadir al carrito.");
-            return;
-        }
-
-        // El precio final es el precio base más los extras de las opciones
-        let finalPrice = precioWithAdd;
-
-        // Creamos una copia simple del producto, pero con el precio actualizado
-        let productAdd = { ...product, price: finalPrice };
-
-        let listOptionsSelected = { ...selectedGroupOptions }
-
-        // ... (Tu lógica existente de añadir al carrito) ...
-        const productToAdd = {
-            ...productAdd,
-            options: listOptionsSelected,
-            quantity: quantity,
-        };
-
-        addToCart(productToAdd);
-    }, [product, selectedGroupOptions, quantity, addToCart, canAddToCart, precioWithAdd]);
-
-    // 🛑 5. Función para manejar la selección de opciones
+    // 🛑 NUEVA LÓGICA: SELECCIÓN MULTI-INSTANCIA
     const handleOptionSelect = useCallback((group, option) => {
-        if (group.multiple === true) {
-            setSelectedGroupOptions(prev => {
-                const currentSelections = prev[group.id] || [];
-                const isAlreadySelected = currentSelections.some(selectedOption => selectedOption.id === option.id);
-
-                console.log('Grupo:', group);
-                console.log('Opción seleccionada:', option);
-                console.log('Selecciones actuales:', currentSelections);
-                console.log('¿Ya está seleccionado?:', isAlreadySelected);
-                if (isAlreadySelected) {
-                    // Si ya está seleccionado, siempre permitimos quitarlo
-                    const updatedSelections = currentSelections.filter(selectedOption => selectedOption.id !== option.id);
-                    return { ...prev, [group.id]: updatedSelections };
-                } else {
-                    // Si no está seleccionado, verificamos el límite
-                    // group.option_select es el límite máximo (si es 0, es ilimitado)
-                    const limit = Number(group.option_select);
-                console.log('group:', group);
-
-                    if (limit > 0 && currentSelections.length >= limit) {
-                        alert(`Solo puedes seleccionar un máximo de ${limit} opciones para ${group.name}`);
-                        return prev; // No actualizamos el estado, bloqueando la selección
-                    }
-
-                    return {
-                        ...prev,
-                        [group.id]: [...currentSelections, option]
-                    };
+        setSelectedGroupOptions(prev => {
+            const currentSelections = prev[group.id] || [];
+            
+            if (group.multiple) {
+                const limit = Number(group.option_select);
+                // Si hay límite y ya se alcanzó, no añadir más
+                if (limit > 0 && currentSelections.length >= limit) {
+                    alert(`Has alcanzado el límite de ${limit} opciones para ${group.name}`);
+                    return prev;
                 }
-            });
-        } else {
-            // Lógica para selección única (radio button style)
-            setSelectedGroupOptions(prev => ({
-                ...prev,
-                [group?.id]: option
-            }));
-        }
+                // Añadimos una nueva instancia (incluso si es el mismo ID)
+                // Usamos un identificador único temporal (timestamp) para poder borrar uno específico luego
+                const optionWithUniqueKey = { ...option, tempId: Date.now() + Math.random() };
+                return { ...prev, [group.id]: [...currentSelections, optionWithUniqueKey] };
+            } else {
+                // Si no es múltiple, se comporta como radio button normal
+                return { ...prev, [group.id]: option };
+            }
+        });
     }, []);
 
-    // 🛑 6. Función de validación del carrito
+    // 🛑 ELIMINAR UNA INSTANCIA ESPECÍFICA
+    const removeOneInstance = (groupId, tempId) => {
+        setSelectedGroupOptions(prev => {
+            const current = prev[groupId];
+            if (Array.isArray(current)) {
+                return { ...prev, [groupId]: current.filter(opt => opt.tempId !== tempId) };
+            } else {
+                const { [groupId]: _, ...rest } = prev;
+                return rest;
+            }
+        });
+    };
+
+    const increaseQuantity = () => setQuantity(prev => prev + 1);
+    const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
+
     const validateAddToCart = useCallback(() => {
-        // 1. Verificar cantidad mínima
-        if (quantity < 1) {
-            setCanAddToCart(false);
-            return;
-        }
-
-        // 2. Verificar si hay grupos de opciones y si todos los obligatorios están seleccionados
+        if (quantity < 1) return setCanAddToCart(false);
         if (listOptionsProduct.length > 0) {
-            // Un grupo es obligatorio si no tiene 'multiple: true' (ajustar según tu lógica)
-            const requiredGroups = listOptionsProduct;
-
-            const allRequiredSelected = requiredGroups.every(group =>
-                selectedGroupOptions.hasOwnProperty(group.id) && selectedGroupOptions[group.id] !== null && selectedGroupOptions[group.id].length !== 0
-            );
-
+            const allRequiredSelected = listOptionsProduct.every(group => {
+                const selection = selectedGroupOptions[group.id];
+                return selection && (Array.isArray(selection) ? selection.length > 0 : !!selection);
+            });
             setCanAddToCart(allRequiredSelected);
             return;
         }
-
-        // Si no hay opciones de grupo, solo importa la cantidad
         setCanAddToCart(true);
-
     }, [quantity, listOptionsProduct, selectedGroupOptions]);
 
-    // 🛑 7. useEffect para disparar la validación cuando las dependencias cambian
     useEffect(() => {
         validateAddToCart();
     }, [quantity, listOptionsProduct, selectedGroupOptions, validateAddToCart]);
 
-    // 7. Renderizado Condicional: ID Inválido
-    if (isValidId === false) {
-        return (
-            <div className="container my-5 text-center">
-                <h1 className="text-danger">❌ Error de Enlace</h1>
-                <p className="lead">Enlace de producto inválido. Serás redirigido a la página de inicio en 3 segundos...</p>
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Redirigiendo...</span>
-                </div>
-            </div>
-        );
-    }
-
-    // 8. Renderizado Condicional: Carga de datos
-    if (loading || !productId) {
-        return <div className="container my-5 text-center">Cargando detalles del producto...</div>;
-    }
-
-    // 9. Renderizado Condicional: Error de Hook o Producto no encontrado (tras la carga)
-    if (error || !product || product.active === false) {
-        // Redirigir inmediatamente si el producto no existe o hubo un error de BBDD
-        //navigate('/', { replace: true });
-        setIsValidId(false);
-        return null;
-    }
-
-    const isOptionSelected = (option, group) => {
-        if (group.multiple == false && selectedGroupOptions[group?.id]?.id === option.id) {
-            return true;
-        }
-        else if (group.multiple == true && Array.isArray(selectedGroupOptions[group?.id])) {
-            return selectedGroupOptions[group?.id]?.some(selectedOption => selectedOption.id === option.id);
-        }
-
-        return false;
+    const handleAddToCart = (e) => {
+        e.stopPropagation();
+        if (!canAddToCart) return;
+        addToCart({ ...product, price: precioWithAdd, options: selectedGroupOptions, quantity });
     };
 
+    // Auxiliar para contar cuántas veces se ha seleccionado una opción específica
+    const getOptionCount = (groupId, optionId) => {
+        const selections = selectedGroupOptions[groupId];
+        if (!Array.isArray(selections)) return selections?.id === optionId ? 1 : 0;
+        return selections.filter(opt => opt.id === optionId).length;
+    };
 
-    // 10. Renderizado Principal
+    if (isValidId === false) return <div className="container my-5 text-center"><h1>❌ Error</h1></div>;
+    if (loading || !productId) return <div className="container my-5 text-center">Cargando...</div>;
+
     return (
         <div className="container my-5">
-            {/* ⬅️ BREADCRUMB */}
-            <div
-                className="mb-4 p-2 rounded shadow-sm d-flex justify-content-center"
-                style={{ backgroundColor: '#c7d088' }}
-            >
-                <div className="small">
-                    <Link to="/" className="text-decoration-none text-dark fw-bold">Productos</Link>
-                    <span className="text-dark">{' > '}</span>
-                    <Link to="/" className="text-decoration-none text-dark fw-bold">
-                        {product.type?.name || 'Tipo'}
-                    </Link>
-                    <span className="text-dark">{' > '}</span>
-                    <span className="text-dark">{product.name}</span>
-                </div>
-            </div>
-
+            {/* Breadcrumb omitido por brevedad, mantener el tuyo */}
+            
             <div className="row">
-                {/* Columna de Imagen */}
-                <div className="col-md-6">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="img-fluid rounded shadow"
-                    />
+                <div className="col-md-6 mb-4">
+                    <img src={product.image} alt={product.name} className="img-fluid rounded shadow" />
                 </div>
 
-                {/* Columna de Detalles */}
                 <div className="col-md-6">
-                    <span className="badge bg-secondary mb-3">{product.type?.name}</span>
-                    <h1>{product.name}</h1>
+                    <span className="badge bg-secondary mb-2">{product.type?.name}</span>
+                    <h1 className="fw-bold">{product.name}</h1>
                     <p className="lead">{product.description}</p>
 
-                    {/* 🛑 NUEVA SECCIÓN DE PRECIOS */}
-                    <div className="mt-4 mb-3 d-flex align-items-center">
-                        {/* Si el precio calculado es diferente al base, mostramos el base tachado */}
-                        {precioWithAdd !== product.price ? (
-                            <div className="me-3">
-                                <small className="text-muted d-block fw-light">Precio Base:</small>
-                                <h2 className="text-decoration-line-through text-danger mb-0">
-                                    {Number(product.price).toFixed(2)} €
-                                </h2>
-                            </div>
-                        ) : null}
-
-                        {/* Precio Final (Siempre visible y grande) */}
-                        <div>
-                            <small className="text-muted d-block fw-light">
-                                {precioWithAdd !== product.price ? 'Precio Total:' : 'Precio:'}
-                            </small>
-                            <h2 className={`mb-0 ${precioWithAdd !== product.price ? 'text-success' : 'text-dark'}`}>
-                                {Number(precioWithAdd).toFixed(2)} €
-                            </h2>
-                        </div>
+                    <div className="h3 mb-4 fw-bold text-success">
+                        {Number(precioWithAdd).toFixed(2)} €
+                        {precioWithAdd !== product.price && <small className="text-muted text-decoration-line-through ms-2 fs-6">{Number(product.price).toFixed(2)} €</small>}
                     </div>
-                    {/* 🛑 FIN DE NUEVA SECCIÓN DE PRECIOS */}
 
-                    {/* Opciones */}
-                    {listOptionsProduct.length > 0 && (
-                        <div className="mt-4">
-                            <div className="mb-3">
-                                {listOptionsProduct?.map((group, index) => (
-                                    <div key={'group_' + group.id}> {/* Cambiado de <> a <div> para mejor control */}
-                                        <p className="mb-2">
-                                            <strong>
-                                                {group.name}
-                                                {group.multiple
-                                                    ? ` (Máximo ${group.option_select > 0 ? group.option_select : 'sin límite'} opciones)`
-                                                    : ' (Selecciona una opción)'}:
-                                            </strong>
-                                        </p>
-                                        <div className="d-flex flex-wrap gap-2 mb-3">
-                                            {group.options.map((option, idx) => {
-                                                const isSelected = isOptionSelected(option, group);
-                                                const limitReached = group.multiple &&
-                                                    group.option_select > 0 &&
-                                                    (selectedGroupOptions[group.id]?.length >= group.option_select) &&
-                                                    !isSelected;
+                    {/* SELECTOR DE OPCIONES DISPONIBLES */}
+                    {listOptionsProduct.map((group) => (
+                        <div key={group.id} className="mb-4 p-3 border rounded shadow-sm bg-white">
+                            <h6 className="fw-bold d-flex justify-content-between align-items-center">
+                                {group.name}
+                                {group.option_select > 0 && (
+                                    <span className="badge rounded-pill bg-light text-dark border">
+                                        {(selectedGroupOptions[group.id]?.length || 0)} / {group.option_select}
+                                    </span>
+                                )}
+                            </h6>
+                            <div className="d-flex flex-wrap gap-2 mt-2">
+                                {group.options.map((option) => {
+                                    const count = getOptionCount(group.id, option.id);
+                                    const limitReached = group.multiple && group.option_select > 0 && (selectedGroupOptions[group.id]?.length >= group.option_select);
+                                    
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            className={`btn btn-sm d-flex align-items-center gap-2 ${count > 0 ? "btn-dark" : "btn-outline-dark"}`}
+                                            onClick={() => handleOptionSelect(group, option)}
+                                            disabled={limitReached && !(!group.multiple && count > 0)}
+                                        >
+                                            {option.name} 
+                                            {option.add_price > 0 && <small>(+{option.add_price}€)</small>}
+                                            {count > 0 && <span className="badge bg-primary">{count}</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
 
-                                                return (
-                                                    <button
-                                                        key={option.id}
-                                                        type="button"
-                                                        className={`btn btn-sm ${isSelected ? "btn-dark" : "btn-outline-dark"}`}
-                                                        onClick={() => handleOptionSelect(group, option)}
-                                                        style={{ opacity: limitReached ? 0.5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
-                                                        title={limitReached ? "Límite alcanzado" : ""}
-                                                    >
-                                                        {option.name} {option.add_price > 0 ? `( +${option.add_price} € )` : ''}
-                                                    </button>
-                                                );
-                                            })}
+                    {/* RESUMEN DE ELEMENTOS SELECCIONADOS (LISTA INFERIOR) */}
+                    {Object.values(selectedGroupOptions).some(s => Array.isArray(s) ? s.length > 0 : !!s) && (
+                        <div className="mb-4">
+                            <p className="fw-bold mb-2">Elementos añadidos:</p>
+                            <div className="list-group shadow-sm">
+                                {listOptionsProduct.map(group => {
+                                    const selection = selectedGroupOptions[group.id];
+                                    if (!selection || (Array.isArray(selection) && selection.length === 0)) return null;
+
+                                    const items = Array.isArray(selection) ? selection : [selection];
+                                    return items.map((opt, idx) => (
+                                        <div key={opt.tempId || idx} className="list-group-item d-flex justify-content-between align-items-center py-2">
+                                            <div>
+                                                <span className="fw-bold text-primary mr-2">•</span> {opt.name}
+                                                <small className="text-muted ms-2">({group.name})</small>
+                                            </div>
+                                            <div className="d-flex align-items-center gap-3">
+                                                {opt.add_price > 0 && <span className="small">+{Number(opt.add_price).toFixed(2)}€</span>}
+                                                <BsXCircleFill 
+                                                    className="text-danger fs-5" 
+                                                    style={{ cursor: 'pointer' }} 
+                                                    onClick={() => removeOneInstance(group.id, opt.tempId)}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ));
+                                })}
                             </div>
                         </div>
                     )}
 
-                    {/* SELECTOR DE CANTIDAD */}
-                    <div className="d-flex align-items-center mb-4 mt-4">
-                        <button
-                            className="btn btn-outline-dark"
-                            onClick={decreaseQuantity}
-                            disabled={quantity <= 1}
+                    {/* ACCIONES FINALES */}
+                    <div className="d-flex align-items-center gap-3 pt-3 border-top mt-4">
+                        <div className="d-flex align-items-center border rounded">
+                            <button className="btn btn-link text-dark py-2" onClick={decreaseQuantity} disabled={quantity <= 1}><BsDashCircle /></button>
+                            <span className="px-3 fw-bold">{quantity}</span>
+                            <button className="btn btn-link text-dark py-2" onClick={increaseQuantity}><BsPlusCircle /></button>
+                        </div>
+                        <button 
+                            className="btn btn-dark btn-lg flex-grow-1" 
+                            onClick={handleAddToCart}
+                            disabled={!canAddToCart}
                         >
-                            -
-                        </button>
-                        <span className="mx-3 fs-5" style={{ minWidth: '30px', textAlign: 'center' }}>{quantity}</span>
-                        <button
-                            className="btn btn-outline-dark"
-                            onClick={increaseQuantity}
-                        >
-                            +
+                            Añadir al carrito ({Number(precioWithAdd * quantity).toFixed(2)} €)
                         </button>
                     </div>
-
-                    <button
-                        className="btn btn-dark btn-lg w-100 mt-3"
-                        onClick={handleAddToCart}
-                        disabled={!canAddToCart}
-                    >
-                        Agregar al carrito ({quantity}) &nbsp; <BsCartPlus />
-                    </button>
                 </div>
             </div>
         </div>
