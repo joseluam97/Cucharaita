@@ -84,7 +84,7 @@ const ProductDetail = () => {
         errorOptions
     } = useOptions({ id_product: productId });
 
-    
+
     useEffect(() => {
         if (product?.name) {
             // Formato deseado: "Cucharaita - Nombre del Producto"
@@ -99,7 +99,7 @@ const ProductDetail = () => {
             document.title = 'Cucharaita'; // O el título principal de tu sitio
         };
     }, [product]);
-    
+
     useEffect(() => {
         if (listOptions != null && product) {
             let uniqueGroups = groupOptionsByGroup(listOptions);
@@ -221,31 +221,43 @@ const ProductDetail = () => {
 
     // 🛑 5. Función para manejar la selección de opciones
     const handleOptionSelect = useCallback((group, option) => {
-        if (group.multiple == true) {
-            // Múltiples opciones permitidas
+        if (group.multiple === true) {
             setSelectedGroupOptions(prev => {
                 const currentSelections = prev[group.id] || [];
-                let updatedSelections;
-                if (currentSelections.some(selectedOption => selectedOption.id === option.id)) {
-                    // Si ya está seleccionado, lo quitamos
-                    updatedSelections = currentSelections.filter(selectedOption => selectedOption.id !== option.id);
+                const isAlreadySelected = currentSelections.some(selectedOption => selectedOption.id === option.id);
+
+                console.log('Grupo:', group);
+                console.log('Opción seleccionada:', option);
+                console.log('Selecciones actuales:', currentSelections);
+                console.log('¿Ya está seleccionado?:', isAlreadySelected);
+                if (isAlreadySelected) {
+                    // Si ya está seleccionado, siempre permitimos quitarlo
+                    const updatedSelections = currentSelections.filter(selectedOption => selectedOption.id !== option.id);
+                    return { ...prev, [group.id]: updatedSelections };
                 } else {
-                    // Si no está seleccionado, lo añadimos
-                    updatedSelections = [...currentSelections, option];
+                    // Si no está seleccionado, verificamos el límite
+                    // group.option_select es el límite máximo (si es 0, es ilimitado)
+                    const limit = Number(group.option_select);
+                console.log('group:', group);
+
+                    if (limit > 0 && currentSelections.length >= limit) {
+                        alert(`Solo puedes seleccionar un máximo de ${limit} opciones para ${group.name}`);
+                        return prev; // No actualizamos el estado, bloqueando la selección
+                    }
+
+                    return {
+                        ...prev,
+                        [group.id]: [...currentSelections, option]
+                    };
                 }
-                return {
-                    ...prev,
-                    [group.id]: updatedSelections
-                };
             });
-        }
-        else {
+        } else {
+            // Lógica para selección única (radio button style)
             setSelectedGroupOptions(prev => ({
                 ...prev,
-                [group?.id]: option // Guarda la opción seleccionada bajo la clave del ID del grupo
+                [group?.id]: option
             }));
         }
-
     }, []);
 
     // 🛑 6. Función de validación del carrito
@@ -381,24 +393,38 @@ const ProductDetail = () => {
                         <div className="mt-4">
                             <div className="mb-3">
                                 {listOptionsProduct?.map((group, index) => (
-                                    <>
-                                        <p key={'title_group_' + index} className="mb-2">
-                                            <strong>{group.name}
-                                                {group.multiple == false ? ' (Una opción)' : ' (Varias opciones)'}:</strong>
+                                    <div key={'group_' + group.id}> {/* Cambiado de <> a <div> para mejor control */}
+                                        <p className="mb-2">
+                                            <strong>
+                                                {group.name}
+                                                {group.multiple
+                                                    ? ` (Máximo ${group.option_select > 0 ? group.option_select : 'sin límite'} opciones)`
+                                                    : ' (Selecciona una opción)'}:
+                                            </strong>
                                         </p>
-                                        <div className="d-flex flex-wrap gap-2">
-                                            {group.options.map((option, index) => (
-                                                <button
-                                                    key={index}
-                                                    type="button"
-                                                    className={`btn btn-sm ${isOptionSelected(option, group) ? "btn-dark" : "btn-outline-dark"}`}
-                                                    onClick={() => handleOptionSelect(group, option)}
-                                                >
-                                                    {option.name} {option.add_price > 0 ? `( +${option.add_price} € )` : ''}
-                                                </button>
-                                            ))}
+                                        <div className="d-flex flex-wrap gap-2 mb-3">
+                                            {group.options.map((option, idx) => {
+                                                const isSelected = isOptionSelected(option, group);
+                                                const limitReached = group.multiple &&
+                                                    group.option_select > 0 &&
+                                                    (selectedGroupOptions[group.id]?.length >= group.option_select) &&
+                                                    !isSelected;
+
+                                                return (
+                                                    <button
+                                                        key={option.id}
+                                                        type="button"
+                                                        className={`btn btn-sm ${isSelected ? "btn-dark" : "btn-outline-dark"}`}
+                                                        onClick={() => handleOptionSelect(group, option)}
+                                                        style={{ opacity: limitReached ? 0.5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
+                                                        title={limitReached ? "Límite alcanzado" : ""}
+                                                    >
+                                                        {option.name} {option.add_price > 0 ? `( +${option.add_price} € )` : ''}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                    </>
+                                    </div>
                                 ))}
                             </div>
                         </div>

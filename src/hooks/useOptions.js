@@ -14,7 +14,7 @@ const useOptions = ({ id_product = null }) => {
           .from('Options_Products')
           .select(`
             *,
-            group (id, name, multiple)
+            group (id, name, multiple, option_select)
           `)
           .eq('product', id_product)
           .order('id', { ascending: true });
