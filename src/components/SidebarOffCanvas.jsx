@@ -43,9 +43,6 @@ const SidebarOffCanvas = () => {
       const { data: discountData, error: discountError } = await fetchDiscount(code);
       if (discountError) throw new Error();
       const coupon = discountData?.[0];
-      console.log(subtotal);
-      console.log(coupon.min_amount);
-      console.log(Number(subtotal) >= Number(coupon.min_amount));
 
       // Ilegal Condition(1): Coupon must exist
       if (coupon == null) {
