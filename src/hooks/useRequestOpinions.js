@@ -1,17 +1,16 @@
 import { supabase } from "../../supabase";
 
-// Se convierte en una función ASÍNCRONA normal.
-const fetchDiscount = async (code_selected) => {
+const fetchRequestOpinions = async (code_selected) => {
     if (!code_selected) {
         return { data: null, error: null };
     }
-    
+
     try {
         const { data, error } = await supabase
-            .from('Discounts')
+            .from('Request_Opinions')
             .select('*')
-            .eq('name', code_selected)
-            .order('id', { ascending: false });
+            .eq('name_code', code_selected)
+            .single();
 
         if (error) {
             throw error;
@@ -25,4 +24,4 @@ const fetchDiscount = async (code_selected) => {
     }
 };
 
-export default fetchDiscount;
+export default fetchRequestOpinions;

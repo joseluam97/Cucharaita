@@ -13,8 +13,9 @@ import Footer from "./components/Footer";
 import SidebarOffCanvas from "./components/SidebarOffCanvas";
 
 // Vistas/Páginas
-import Home from "./components/Home"; // 👈 Importar la nueva vista Home
-import ProductDetail from "./components/ProductDetail"; // 👈 Asumimos que tienes el detalle
+import Home from "./components/Home";
+import Opinions from "./components/Opinions";
+import ProductDetail from "./components/ProductDetail";
 
 const App = () => {
   // Solo se quedan los stores necesarios para el LAYOUT y el OFFcanvas
@@ -52,7 +53,8 @@ const App = () => {
           <Route path="/" element={<Home />} /> 
           
           <Route path="/product/:id" element={<ProductDetail />} />
-          
+          <Route path="/opinions/" element={<Opinions />} />
+                   
           <Route path="*" element={
               <div className="container mt-5 text-center">
                   <h1>404</h1>

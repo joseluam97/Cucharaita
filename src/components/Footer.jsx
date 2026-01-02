@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="row align-items-center">
           <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
             <p className="mb-0">
-              &copy; 2024{" "}
+              &copy; 2026{" "}
               <a className="text-white text-decoration-none">
                 Cucharaita
               </a>{" "}
