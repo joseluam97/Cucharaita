@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { Base64 } from 'js-base64';
 
 const ProductCard = ({ product }) => {
-  // Detectar móvil para ajustes finos de UI
   const isMobile = window.innerWidth < 768;
 
   const { addToCart } = useCartStore();
@@ -36,6 +35,8 @@ const ProductCard = ({ product }) => {
     <div className="text-decoration-none text-dark h-100">
       <div className="card custom-card h-100 d-flex flex-column shadow-sm">
         <div className="cursor-pointer flex-grow-1" onClick={handleNavigation}>
+          
+          {/* Contenedor de Imagen + Badges */}
           <div className="position-relative">
             <img
               src={product.image}
@@ -47,7 +48,29 @@ const ProductCard = ({ product }) => {
                 width: "100%"
               }}
             />
-            <span className="badge custom-badge position-absolute top-0 end-0 m-2">
+
+            {/* --- NUEVA ETIQUETA DESTACADA (Top Izquierda) --- */}
+            {product.tag?.title && (
+              <span 
+                className="position-absolute top-0 start-0 m-1 badge shadow"
+                style={{ 
+                  backgroundColor: product.tag.color || "#000", // Color dinámico
+                  color: "#fff",
+                  fontSize: isMobile ? "0.7rem" : "0.90rem",
+                  fontWeight: "700",             // Letra más gruesa
+                  textTransform: "capitalize",    // Todo en mayúsculas para destacar
+                  //letterSpacing: "0.5px",        // Un poco de aire entre letras
+                  zIndex: 10,
+                  borderRadius: "5px"            // Bordes ligeramente redondeados (no píldora completa)
+                }}
+              >
+                {product.tag.title}
+              </span>
+            )}
+            {/* ------------------------------------------------ */}
+
+            {/* Badge original de Categoría (Top Derecha) */}
+            <span className="badge custom-badge position-absolute top-0 end-0">
               {product.type.name}
             </span>
           </div>
@@ -70,7 +93,7 @@ const ProductCard = ({ product }) => {
             className={`btn w-100 btn-sm d-flex align-items-center justify-content-center gap-1 ${product?.has_options ? 'btn-outline-dark' : 'btn-cart'}`}
             onClick={handleButtonAction}
             style={{ 
-              fontSize: isMobile ? "0.68rem" : "0.85rem", // Fuente un poco más pequeña en móvil para que quepa el texto
+              fontSize: isMobile ? "0.68rem" : "0.85rem", 
               paddingLeft: "2px",
               paddingRight: "2px"
             }}

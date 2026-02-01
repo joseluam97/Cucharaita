@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import useProducts from "../hooks/useProducts";
 import useCartStore from "../store/cartStore";
-import { BsCartPlus, BsDashCircle, BsPlusCircle, BsXCircleFill } from "react-icons/bs";
+import { BsCartPlus, BsDashCircle, BsPlusCircle, BsXCircleFill, BsInfoCircle } from "react-icons/bs";
 import { Base64 } from 'js-base64';
 import useOptions from "../hooks/useOptions";
 
@@ -103,26 +103,21 @@ const ProductDetail = () => {
     const handleOptionSelect = useCallback((group, option) => {
         setSelectedGroupOptions(prev => {
             const currentSelections = prev[group.id] || [];
-            
+
             if (group.multiple) {
                 const limit = Number(group.option_select);
-                // Si hay límite y ya se alcanzó, no añadir más
                 if (limit > 0 && currentSelections.length >= limit) {
                     alert(`Has alcanzado el límite de ${limit} opciones para ${group.name}`);
                     return prev;
                 }
-                // Añadimos una nueva instancia (incluso si es el mismo ID)
-                // Usamos un identificador único temporal (timestamp) para poder borrar uno específico luego
                 const optionWithUniqueKey = { ...option, tempId: Date.now() + Math.random() };
                 return { ...prev, [group.id]: [...currentSelections, optionWithUniqueKey] };
             } else {
-                // Si no es múltiple, se comporta como radio button normal
                 return { ...prev, [group.id]: option };
             }
         });
     }, []);
 
-    // 🛑 ELIMINAR UNA INSTANCIA ESPECÍFICA
     const removeOneInstance = (groupId, tempId) => {
         setSelectedGroupOptions(prev => {
             const current = prev[groupId];
@@ -140,22 +135,20 @@ const ProductDetail = () => {
 
     const validateAddToCart = useCallback(() => {
         if (quantity < 1) return setCanAddToCart(false);
-        
+
         if (listOptionsProduct.length > 0) {
             const allRequiredSatisfied = listOptionsProduct.every(group => {
                 const selection = selectedGroupOptions[group.id];
                 const limit = Number(group.option_select);
 
-                // Si tiene un límite (option_select > 0), debe ser exactamente ese número
                 if (limit > 0) {
                     const currentCount = Array.isArray(selection) ? selection.length : (selection ? 1 : 0);
                     return currentCount === limit;
                 }
-                
-                // Si limit es 0, basta con que haya algo seleccionado (si el grupo es obligatorio)
+
                 return selection && (Array.isArray(selection) ? selection.length > 0 : !!selection);
             });
-            
+
             setCanAddToCart(allRequiredSatisfied);
             return;
         }
@@ -165,27 +158,23 @@ const ProductDetail = () => {
     useEffect(() => {
         validateAddToCart();
     }, [quantity, listOptionsProduct, selectedGroupOptions, validateAddToCart]);
-    
+
     const handleAddToCart = (e) => {
         e.stopPropagation();
         if (!canAddToCart) return;
 
-        // Enviar al store
-        addToCart({ 
-            ...product, 
-            price: precioWithAdd, 
-            options: { ...selectedGroupOptions }, 
-            quantity: quantity 
+        addToCart({
+            ...product,
+            price: precioWithAdd,
+            options: { ...selectedGroupOptions },
+            quantity: quantity
         });
 
-        // --- LIMPIEZA DE ESTADOS ---
-        setSelectedGroupOptions({}); // Resetea las opciones
-        setQuantity(1);             // Resetea la cantidad a 1
-        setPrecioWithAdd(product.price); // Resetea el precio visual al base
-        
+        setSelectedGroupOptions({});
+        setQuantity(1);
+        setPrecioWithAdd(product.price);
     };
 
-    // Auxiliar para contar cuántas veces se ha seleccionado una opción específica
     const getOptionCount = (groupId, optionId) => {
         const selections = selectedGroupOptions[groupId];
         if (!Array.isArray(selections)) return selections?.id === optionId ? 1 : 0;
@@ -197,12 +186,25 @@ const ProductDetail = () => {
 
     return (
         <div className="container my-5">
-            
+
             <div className="row">
+                {/* COLUMNA IZQUIERDA: IMAGEN + INGREDIENTES */}
                 <div className="col-md-6 mb-4">
-                    <img src={product.image} alt={product.name} className="img-fluid rounded shadow" />
+                    {/* --- IMAGEN CON TAMAÑO FIJO Y RECORTE --- */}
+                    <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="img-fluid rounded shadow mb-4" 
+                        style={{ 
+                            width: "100%",          // Ocupa todo el ancho de la columna
+                            height: "500px",        // Altura fija (ajusta este valor si la quieres más alta o baja)
+                            objectFit: "cover"      // CLAVE: Recorta la imagen para llenar el espacio sin deformar
+                        }}
+                    />
+                    {/* ---------------------------------------- */}
                 </div>
 
+                {/* COLUMNA DERECHA: INFO PRODUCTO + COMPRA */}
                 <div className="col-md-6">
                     <span className="badge bg-secondary mb-2">{product.type?.name}</span>
                     <h1 className="fw-bold">{product.name}</h1>
@@ -227,7 +229,7 @@ const ProductDetail = () => {
                                 {group.options.map((option) => {
                                     const count = getOptionCount(group.id, option.id);
                                     const limitReached = group.multiple && group.option_select > 0 && (selectedGroupOptions[group.id]?.length >= group.option_select);
-                                    
+
                                     return (
                                         <button
                                             key={option.id}
@@ -235,7 +237,7 @@ const ProductDetail = () => {
                                             onClick={() => handleOptionSelect(group, option)}
                                             disabled={limitReached && !(!group.multiple && count > 0)}
                                         >
-                                            {option.name} 
+                                            {option.name}
                                             {option.add_price > 0 && <small>(+{option.add_price}€)</small>}
                                             {count > 0 && <span className="badge bg-primary">{count}</span>}
                                         </button>
@@ -262,9 +264,9 @@ const ProductDetail = () => {
                                             </div>
                                             <div className="d-flex align-items-center gap-3">
                                                 {opt.add_price > 0 && <span className="small">+{Number(opt.add_price).toFixed(2)}€</span>}
-                                                <BsXCircleFill 
-                                                    className="text-danger fs-5" 
-                                                    style={{ cursor: 'pointer' }} 
+                                                <BsXCircleFill
+                                                    className="text-danger fs-5"
+                                                    style={{ cursor: 'pointer' }}
                                                     onClick={() => removeOneInstance(group.id, opt.tempId)}
                                                 />
                                             </div>
@@ -281,14 +283,33 @@ const ProductDetail = () => {
                             <span className="px-3 fw-bold">{quantity}</span>
                             <button className="btn btn-link text-dark py-2" onClick={increaseQuantity}><BsPlusCircle /></button>
                         </div>
-                        <button 
-                            className="btn btn-dark btn-lg flex-grow-1" 
+                        <button
+                            className="btn btn-dark btn-lg flex-grow-1"
                             onClick={handleAddToCart}
                             disabled={!canAddToCart}
                         >
                             Añadir al carrito ({Number(precioWithAdd * quantity).toFixed(2)} €)
                         </button>
                     </div>
+                </div>
+
+                <div className="col-md-12 mb-0">
+                    {product.ingredients && (
+                        <div className="p-3 bg-light rounded border border-secondary border-opacity-25">
+                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.9rem' }}>
+                                Ingredientes
+                            </h6>
+                            <p className="mb-0 text-secondary small fst-italic" style={{ lineHeight: '1.5' }}>
+                                {product.ingredients}
+                            </p>
+                            <h6 className="fw-bold text-dark mb-2 mt-4" style={{ fontSize: '0.9rem' }}>
+                                Alérgenos
+                            </h6>
+                            <p className="mb-0 text-secondary small fst-italic" style={{ lineHeight: '1.5' }}>
+                                {product.allergens}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -38,7 +38,8 @@ const useProducts = ({ id = null }) => {
                     .from('Productos')
                     .select(`
                         *,
-                        type ( id, name ) // Traemos solo el nombre del tipo
+                        tag ( title, color ),
+                        type ( id, name ) 
                     `);
 
                 // Aplicar filtro/ordenamiento
