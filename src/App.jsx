@@ -33,41 +33,51 @@ const MODE_WEB = import.meta.env.MODE
         // 1. Datos técnicos avanzados del navegador
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         
-        // 2. Obtener Ubicación e IP (Requiere fetch a API externa)
-        // Usamos ipapi.co (gratuita para pocas peticiones)
-        const response = await fetch('https://ipapi.co/json/');
+        // 2. Obtener Ubicación e IP
+        // CAMBIO: Usamos ipwho.is porque ipapi.co bloquea las peticiones desde Vercel (CORS)
+        const response = await fetch('https://ipwho.is/');
         const locationData = await response.json();
+
+        // Verificamos si la API respondió correctamente
+        if (!locationData.success) {
+            console.warn("La API de IP falló:", locationData.message);
+            // Podrías decidir continuar sin ubicación o detenerte aquí
+        }
 
         const technicalData = {
           fecha: new Date().toLocaleString(),
           zona_horaria: Intl.DateTimeFormat().resolvedOptions().timeZone,
           idioma: navigator.language,
-          tipo_conexion: connection ? connection.effectiveType : "Desconocido", // 4g, 3g, wifi...
+          tipo_conexion: connection ? connection.effectiveType : "Desconocido", 
           es_tactil: navigator.maxTouchPoints > 0 ? "Sí" : "No",
           referrer: document.referrer || "Acceso directo",
           url: window.location.href,
-          ip: locationData.ip,
-          ciudad: locationData.city,
-          region: locationData.region,
-          pais: locationData.country_name,
-          proveedor_internet: locationData.org,
-          codigo_postal: locationData.postal,
-          lat_long: `${locationData.latitude}, ${locationData.longitude}`
-
+          
+          // --- NUEVOS CAMPOS (Adaptados a ipwho.is) ---
+          ip: locationData.ip || "Desconocida",
+          ciudad: locationData.city || "Desconocida",
+          region: locationData.region || "Desconocida",
+          pais: locationData.country || "Desconocido", // "country" en vez de "country_name"
+          proveedor_internet: locationData.connection?.isp || "Desconocido", // Viene dentro de "connection"
+          codigo_postal: locationData.postal || "Desconocido",
+          lat_long: locationData.latitude && locationData.longitude 
+                    ? `${locationData.latitude}, ${locationData.longitude}` 
+                    : "Desconocido"
         };
         
-        if(MODE_WEB==="production"){
+        if (MODE_WEB === "production") {
+          // Asegúrate de que insertAccess provenga de tu hook useLogAccess
           await insertAccess(technicalData);
         }
 
       } catch (error) {
-        console.error("No se pudo obtener la ubicación:", error);
+        console.error("Error en el log de acceso:", error);
       }
     };
 
     logUserAccess();
 
-  }, []);
+  }, []); // Array vacío para ejecutar solo al montar
   // -------------------------------
 
   useEffect(() => {
