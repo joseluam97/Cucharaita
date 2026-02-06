@@ -44,6 +44,8 @@ const MODE_WEB = import.meta.env.MODE
             // Podrías decidir continuar sin ubicación o detenerte aquí
         }
 
+        console.log("Datos de ubicación obtenidos:", locationData);
+
         const technicalData = {
           fecha: new Date().toLocaleString(),
           zona_horaria: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -96,6 +98,7 @@ const MODE_WEB = import.meta.env.MODE
           <Route path="/" element={<Home />} /> 
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/opinions/" element={<Opinions />} />
+          <Route path="/opinions/:code" element={<Opinions />} />
           <Route path="*" element={<div className="container mt-5 text-center"><h1>404</h1></div>} />
         </Routes>
       </main>
