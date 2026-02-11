@@ -5,17 +5,24 @@ import { FaWhatsapp, FaCalendarAlt, FaMapMarkerAlt, FaUser } from "react-icons/f
 // --- IMPORTACIONES DEL CALENDARIO Y EL IDIOMA ---
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es"; // Importamos el español
-import "react-datepicker/dist/react-datepicker.css"; 
+import "react-datepicker/dist/react-datepicker.css";
 
 import useCartStore from "../store/cartStore";
 import useOffcanvasStore from "../store/offcanvasStore";
 import fetchDiscount from "../hooks/useDisconts";
 import useBlockedDays from "../hooks/useBlockedDays";
 
+import emailjs from '@emailjs/browser';
+
 // Registramos el idioma español para que el lunes sea el primer día
 registerLocale("es", es);
 
 const SidebarOffCanvas = () => {
+
+  const SERVICE_ID_EMAIL = import.meta.env.VITE_SUPABASE_SERVICE_ID_EMAIL;
+  const TEMPLATE_ID_EMAIL = import.meta.env.VITE_SUPABASE_TEMPLATE_ID_EMAIL;
+  const PUBLIC_KEY_EMAIL = import.meta.env.VITE_SUPABASE_PUBLIC_KEY_EMAIL;
+
   const { cart, removeFromCart } = useCartStore();
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
 
@@ -28,7 +35,7 @@ const SidebarOffCanvas = () => {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: "",
-    date: "", 
+    date: "",
     address: ""
   });
   const [dateWarning, setDateWarning] = useState(null);
@@ -137,6 +144,54 @@ const SidebarOffCanvas = () => {
     return grouped;
   };
 
+  const handleConfirmOrder = (e) => {
+    e.preventDefault(); // Evitamos comportamientos raros del botón
+
+    const total = calculateTotal();
+
+    // 1. Preparamos el texto del ticket para el Email (Inalterable)
+    let emailOrderDetails = "";
+    cart.forEach((product) => {
+      emailOrderDetails += `\n- ${product.name} x${product.quantity} (${(product.price * product.quantity).toFixed(2)}€)`;
+      const grouped = groupProductOptions(product.options);
+      Object.entries(grouped).forEach(([name, data]) => {
+        emailOrderDetails += `\n   └ ${data.count > 1 ? `${data.count}x ` : ""}${name}`;
+      });
+    });
+
+    if (discountAmount > 0) {
+      emailOrderDetails += `\n\nDescuento aplicado: -${discountAmount.toFixed(2)} €`;
+    }
+
+    // 2. Parámetros que coinciden con las variables {{...}} de tu plantilla de EmailJS
+    const templateParams = {
+      customer_name: customerData.name,
+      customer_date: customerData.date,
+      customer_address: customerData.address,
+      order_details: emailOrderDetails,
+      total_price: total.toFixed(2),
+    };
+
+    // 3. Enviamos el email "por debajo" sin hacer esperar al cliente
+    // REEMPLAZA ESTOS 3 VALORES por los que obtuviste en EmailJS
+    emailjs.send(
+      SERVICE_ID_EMAIL,
+      TEMPLATE_ID_EMAIL,
+      templateParams,
+      PUBLIC_KEY_EMAIL
+    ).then(
+      (response) => console.log('Email enviado con éxito!', response.status, response.text),
+      (error) => console.error('Error al enviar el email...', error)
+    );
+
+    // 4. Inmediatamente generamos el enlace y abrimos WhatsApp
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}`;
+    window.open(whatsappUrl, '_blank');
+
+    // 5. Cerramos el modal
+    setShowCheckoutModal(false);
+  };
+
   const generateWhatsAppMessage = () => {
     const total = calculateTotal();
     const deposit = total * 0.25;
@@ -222,18 +277,18 @@ const SidebarOffCanvas = () => {
             <DatePicker
               selected={selectedDateObj}
               onChange={handleDateChange}
-              minDate={new Date()} 
+              minDate={new Date()}
               excludeDateIntervals={excludedIntervals}
               dateFormat="dd/MM/yyyy"
               locale="es" // <--- AQUÍ APLICAMOS EL ESPAÑOL
               placeholderText="Selecciona una fecha"
               className="form-control form-control-sm w-100"
-              wrapperClassName="w-100" 
+              wrapperClassName="w-100"
             />
             {dateWarning && (
-              <div 
+              <div
                 className={`mt-1 fw-bold ${dateWarning.includes('✅') ? 'text-success' : 'text-warning'}`}
-                style={{ fontSize: '0.7rem' }} 
+                style={{ fontSize: '0.7rem' }}
               >
                 {dateWarning}
               </div>
@@ -276,15 +331,14 @@ const SidebarOffCanvas = () => {
           </p>
 
           <div className="d-grid gap-2">
-            <a
-              href={isFormValid ? `https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}` : "#"}
+            <button
+              type="button"
               className={`btn btn-success fw-bold py-2 ${!isFormValid ? 'disabled' : ''}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => isFormValid && setShowCheckoutModal(false)}
+              onClick={handleConfirmOrder}
+              disabled={!isFormValid}
             >
               <FaWhatsapp className="me-2" size={20} /> ENVIAR PEDIDO
-            </a>
+            </button>
           </div>
         </div>
       </div>
