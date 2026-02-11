@@ -44,8 +44,6 @@ const MODE_WEB = import.meta.env.MODE
             // Podrías decidir continuar sin ubicación o detenerte aquí
         }
 
-        console.log("Datos de ubicación obtenidos:", locationData);
-
         const technicalData = {
           fecha: new Date().toLocaleString(),
           zona_horaria: Intl.DateTimeFormat().resolvedOptions().timeZone,

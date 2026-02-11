@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { FaWhatsapp, FaCalendarAlt, FaMapMarkerAlt, FaUser, FaInfoCircle } from "react-icons/fa";
+import { FaWhatsapp, FaCalendarAlt, FaMapMarkerAlt, FaUser } from "react-icons/fa";
+
+// --- IMPORTACIONES DEL CALENDARIO Y EL IDIOMA ---
+import DatePicker, { registerLocale } from "react-datepicker";
+import { es } from "date-fns/locale/es"; // Importamos el español
+import "react-datepicker/dist/react-datepicker.css"; 
+
 import useCartStore from "../store/cartStore";
 import useOffcanvasStore from "../store/offcanvasStore";
 import fetchDiscount from "../hooks/useDisconts";
+import useBlockedDays from "../hooks/useBlockedDays";
+
+// Registramos el idioma español para que el lunes sea el primer día
+registerLocale("es", es);
 
 const SidebarOffCanvas = () => {
   const { cart, removeFromCart } = useCartStore();
@@ -13,22 +23,21 @@ const SidebarOffCanvas = () => {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [loadingDiscount, setLoadingDiscount] = useState(false);
+  const { data: listBlockDays } = useBlockedDays({});
 
-  // --- NUEVOS ESTADOS PARA EL MODAL Y EL FORMULARIO ---
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [customerData, setCustomerData] = useState({
     name: "",
-    date: "",
+    date: "", 
     address: ""
   });
-  const [dateWarning, setDateWarning] = useState(null); // Para el mensaje de disponibilidad
+  const [dateWarning, setDateWarning] = useState(null);
 
   useEffect(() => {
     setCouponCode("");
     setDiscountAmount(0);
     setCouponMessage("");
     setLoadingDiscount(false);
-    // Resetear modal al cambiar el carrito
     if (cart.length === 0) setShowCheckoutModal(false);
   }, [cart]);
 
@@ -41,35 +50,40 @@ const SidebarOffCanvas = () => {
     return Math.max(0, subtotal - discountAmount);
   };
 
-  // --- LÓGICA DE FECHAS ---
-  const handleDateChange = (e) => {
-    const selectedDateStr = e.target.value;
-    setCustomerData({ ...customerData, date: selectedDateStr });
+  const excludedIntervals = (listBlockDays || []).map(range => {
+    return {
+      start: new Date(`${range.start_day}T00:00:00`),
+      end: new Date(`${range.end_day}T23:59:59`)
+    };
+  });
 
-    if (!selectedDateStr) {
+  const handleDateChange = (date) => {
+    if (!date) {
+      setCustomerData({ ...customerData, date: "" });
       setDateWarning(null);
       return;
     }
 
-    const selectedDate = new Date(selectedDateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const selectedDateStr = `${year}-${month}-${day}`;
+
+    setCustomerData({ ...customerData, date: selectedDateStr });
+
     const today = new Date();
-    // Quitamos la hora para comparar solo fechas
     today.setHours(0, 0, 0, 0);
 
-    // Calculamos diferencia en días
-    const diffTime = selectedDate - today;
+    const diffTime = date - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) {
-      setDateWarning("❌ No puedes seleccionar una fecha pasada.");
-    } else if (diffDays < 3) {
+    if (diffDays < 3) {
       setDateWarning("⚠️ Para pedidos con menos de 3 días de antelación, NO se garantiza la entrega inmediata. Consultaremos disponibilidad al recibir tu pedido.");
     } else {
-      setDateWarning("✅ Fecha válida. Entrega garantizada.");
+      setDateWarning("✅ Fecha anotada. Te confirmaremos la disponibilidad por WhatsApp.");
     }
   };
 
-  // --- LÓGICA DEL CUPÓN (Igual que antes) ---
   const applyCoupon = async () => {
     const code = couponCode.toUpperCase();
     const subtotal = calculateSubtotal();
@@ -83,15 +97,9 @@ const SidebarOffCanvas = () => {
       if (discountError) throw new Error();
       const coupon = discountData?.[0];
 
-      if (coupon == null) {
+      if (coupon == null || coupon.active === false) {
         setDiscountAmount(0);
-        setCouponMessage("❌ Cupón no válido.");
-        setLoadingDiscount(false);
-        return;
-      }
-      if (coupon.active === false) {
-        setDiscountAmount(0);
-        setCouponMessage("❌ El cupón no se encuentra activo.");
+        setCouponMessage(coupon == null ? "❌ Cupón no válido." : "❌ El cupón no se encuentra activo.");
         setLoadingDiscount(false);
         return;
       }
@@ -129,7 +137,6 @@ const SidebarOffCanvas = () => {
     return grouped;
   };
 
-  // --- GENERAR EL MENSAJE FINAL ---
   const generateWhatsAppMessage = () => {
     const total = calculateTotal();
     const deposit = total * 0.25;
@@ -153,7 +160,6 @@ const SidebarOffCanvas = () => {
 
     message += `\n\n*💰 TOTAL A PAGAR: ${total.toFixed(2)} €*`;
 
-    // Información del cliente añadida
     message += `\n----------------------------------`;
     message += `\n*👤 DATOS DE ENTREGA:*`;
     message += `\nNombre: ${customerData.name}`;
@@ -182,23 +188,15 @@ const SidebarOffCanvas = () => {
     });
   };
 
-  const handleOpenCheckout = () => {
-    setShowCheckoutModal(true);
-  };
-
-  const handleCloseCheckout = () => {
-    setShowCheckoutModal(false);
-  };
-
   const isFormValid = customerData.name && customerData.date && customerData.address;
 
-  // --- RENDERIZADO DEL MODAL ---
-  // --- RENDERIZADO DEL MODAL (VERSIÓN SIMPLIFICADA) ---
   const renderCheckoutModal = () => {
     if (!showCheckoutModal) return null;
     const total = calculateTotal();
     const deposit = total * 0.25;
     const remaining = total * 0.75;
+
+    const selectedDateObj = customerData.date ? new Date(`${customerData.date}T12:00:00`) : null;
 
     return (
       <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
@@ -206,30 +204,31 @@ const SidebarOffCanvas = () => {
         <div className="bg-white rounded p-4 shadow-lg" style={{ maxWidth: '450px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h5 className="fw-bold mb-0">Confirmar Datos del Pedido</h5>
-            <button className="btn-close" onClick={handleCloseCheckout}></button>
+            <button className="btn-close" onClick={() => setShowCheckoutModal(false)}></button>
           </div>
 
-          {/* (Eliminada la alerta azul superior) */}
-
-          {/* Formulario más compacto */}
           <div className="mb-3">
             <label className="form-label small fw-bold mb-1"><FaUser className="me-1 text-muted" /> Nombre Completo</label>
             <input
               type="text"
-              className="form-control form-control-sm" // Usamos input-sm para reducir altura
+              className="form-control form-control-sm"
               value={customerData.name}
               onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })}
             />
           </div>
 
-          <div className="mb-3">
+          <div className="mb-3 d-flex flex-column">
             <label className="form-label small fw-bold mb-1"><FaCalendarAlt className="me-1 text-muted" /> Fecha de Entrega</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={customerData.date}
+            <DatePicker
+              selected={selectedDateObj}
               onChange={handleDateChange}
-              min={new Date().toISOString().split('T')[0]}
+              minDate={new Date()} 
+              excludeDateIntervals={excludedIntervals}
+              dateFormat="dd/MM/yyyy"
+              locale="es" // <--- AQUÍ APLICAMOS EL ESPAÑOL
+              placeholderText="Selecciona una fecha"
+              className="form-control form-control-sm w-100"
+              wrapperClassName="w-100" 
             />
             {dateWarning && (
               <div 
@@ -251,34 +250,27 @@ const SidebarOffCanvas = () => {
             />
           </div>
 
-          {/* Resumen de Pagos SIMPLIFICADO */}
           <div className="bg-light p-3 rounded mb-3 border">
             <h6 className="fw-bold border-bottom pb-2 mb-2 small">Resumen de Pago</h6>
-
             <div className="d-flex justify-content-between small mb-2">
               <span>Total:</span>
               <span className="fw-bold">{total.toFixed(2)} €</span>
             </div>
-
-            {/* Sección del 25% simplificada y directa */}
             <div className="mb-2">
               <div className="d-flex justify-content-between text-primary small align-items-center">
                 <span className="fw-bold">Señal para reservar (25%):</span>
                 <span className="fw-bold">{deposit.toFixed(2)} €</span>
               </div>
-              {/* Texto sutil en lugar de alerta amarilla */}
               <p className="m-0 text-muted fst-italic" style={{ fontSize: '0.75rem' }}>
-                (Se abonará por Bizum/Transferencia tras recibir instrucciones por WhatsApp)
+                (Se abonará por Bizum/Transferencia tras recibir instrucciones)
               </p>
             </div>
-
             <div className="d-flex justify-content-between text-muted small pt-2 border-top">
               <span>Restante a la entrega (75%):</span>
               <span>{remaining.toFixed(2)} €</span>
             </div>
           </div>
 
-          {/* Pie de foto abreviado */}
           <p className="text-muted x-small text-center mb-3">
             Se abrirá WhatsApp con el pedido listo para enviar.
           </p>
@@ -301,7 +293,6 @@ const SidebarOffCanvas = () => {
 
   return (
     <>
-      {/* OffCanvas Original */}
       <div className={`offcanvas offcanvas-end ${isVisible ? "show offcanvas-open" : ""}`} tabIndex="-1">
         <div className="offcanvas-header border-bottom">
           <h5 className="fw-bold mb-0">MI CARRITO</h5>
@@ -334,7 +325,6 @@ const SidebarOffCanvas = () => {
         </div>
 
         <div className="offcanvas-footer p-3 bg-light border-top">
-          {/* ... (Sección del cupón igual que antes) ... */}
           <div className="mb-3">
             <label className="small fw-bold mb-1">Cupón de descuento</label>
             <div className="input-group input-group-sm">
@@ -365,10 +355,9 @@ const SidebarOffCanvas = () => {
           </div>
 
           {cart.length > 0 && (
-            // CAMBIO: Ahora este botón abre el modal, no envía a WhatsApp directamente
             <button
               className="btn btn-success w-100 fw-bold py-2 shadow-sm"
-              onClick={handleOpenCheckout}
+              onClick={() => setShowCheckoutModal(true)}
             >
               CONTINUAR PEDIDO
             </button>
@@ -376,7 +365,6 @@ const SidebarOffCanvas = () => {
         </div>
       </div>
 
-      {/* RENDERIZAR EL MODAL SI ESTÁ ACTIVO */}
       {renderCheckoutModal()}
     </>
   );

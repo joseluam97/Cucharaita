@@ -32,8 +32,6 @@ const Opinions = () => {
     // TRUCO: Si viene manualCode úsalo, si no, usa el estado orderCode
     const codeToValidate = manualCode || orderCode;
 
-    console.log("Validando código final:", codeToValidate); // Ahora sí verás el código
-
     if (!codeToValidate) return;
 
     setLoading(true);
