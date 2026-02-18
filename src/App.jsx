@@ -14,6 +14,7 @@ import SidebarOffCanvas from "./components/SidebarOffCanvas";
 import Home from "./components/Home";
 import Opinions from "./components/Opinions";
 import ProductDetail from "./components/ProductDetail";
+import OpinionsList from "./components/OpinionsList";
 
 import useLogAccess from "./hooks/useAccess";
 
@@ -98,6 +99,7 @@ const App = () => {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/opinions/" element={<Opinions />} />
           <Route path="/opinions/:code" element={<Opinions />} />
+          <Route path="/opiniones" element={<OpinionsList />} />
           <Route path="*" element={<div className="container mt-5 text-center"><h1>404</h1></div>} />
         </Routes>
       </main>

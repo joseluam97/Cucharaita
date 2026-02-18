@@ -4,7 +4,7 @@ import { FaWhatsapp, FaCalendarAlt, FaMapMarkerAlt, FaUser } from "react-icons/f
 
 // --- IMPORTACIONES DEL CALENDARIO Y EL IDIOMA ---
 import DatePicker, { registerLocale } from "react-datepicker";
-import { es } from "date-fns/locale/es"; // Importamos el español
+import { es } from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
 
 import useCartStore from "../store/cartStore";
@@ -14,7 +14,6 @@ import useBlockedDays from "../hooks/useBlockedDays";
 
 import emailjs from '@emailjs/browser';
 
-// Registramos el idioma español para que el lunes sea el primer día
 registerLocale("es", es);
 
 const SidebarOffCanvas = () => {
@@ -145,11 +144,9 @@ const SidebarOffCanvas = () => {
   };
 
   const handleConfirmOrder = (e) => {
-    e.preventDefault(); // Evitamos comportamientos raros del botón
-
+    e.preventDefault(); 
     const total = calculateTotal();
 
-    // 1. Preparamos el texto del ticket para el Email (Inalterable)
     let emailOrderDetails = "";
     cart.forEach((product) => {
       emailOrderDetails += `\n- ${product.name} x${product.quantity} (${(product.price * product.quantity).toFixed(2)}€)`;
@@ -163,7 +160,6 @@ const SidebarOffCanvas = () => {
       emailOrderDetails += `\n\nDescuento aplicado: -${discountAmount.toFixed(2)} €`;
     }
 
-    // 2. Parámetros que coinciden con las variables {{...}} de tu plantilla de EmailJS
     const templateParams = {
       customer_name: customerData.name,
       customer_date: customerData.date,
@@ -172,8 +168,6 @@ const SidebarOffCanvas = () => {
       total_price: total.toFixed(2),
     };
 
-    // 3. Enviamos el email "por debajo" sin hacer esperar al cliente
-    // REEMPLAZA ESTOS 3 VALORES por los que obtuviste en EmailJS
     emailjs.send(
       SERVICE_ID_EMAIL,
       TEMPLATE_ID_EMAIL,
@@ -184,11 +178,8 @@ const SidebarOffCanvas = () => {
       (error) => console.error('Error al enviar el email...', error)
     );
 
-    // 4. Inmediatamente generamos el enlace y abrimos WhatsApp
     const whatsappUrl = `https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}`;
     window.open(whatsappUrl, '_blank');
-
-    // 5. Cerramos el modal
     setShowCheckoutModal(false);
   };
 
@@ -214,13 +205,11 @@ const SidebarOffCanvas = () => {
     }
 
     message += `\n\n*💰 TOTAL A PAGAR: ${total.toFixed(2)} €*`;
-
     message += `\n----------------------------------`;
     message += `\n*👤 DATOS DE ENTREGA:*`;
     message += `\nNombre: ${customerData.name}`;
     message += `\nFecha solicitada: ${customerData.date} ${dateWarning && dateWarning.includes("NO se garantiza") ? "(Consultar Disponibilidad)" : ""}`;
     message += `\nLugar: ${customerData.address}`;
-
     message += `\n----------------------------------`;
     message += `\n*ℹ️ CONDICIONES DE PAGO:*`;
     message += `\nSe requiere abonar el 25% para confirmar: *${deposit.toFixed(2)} €*`;
@@ -229,18 +218,28 @@ const SidebarOffCanvas = () => {
     return encodeURIComponent(message);
   };
 
+  // --- UI MEJORADA PARA LAS OPCIONES ---
   const renderGroupedOptionsUI = (productCart) => {
     const grouped = groupProductOptions(productCart.options);
-    return Object.entries(grouped).map(([name, data], index) => {
-      const totalOptionPrice = (data.count * data.add_price).toFixed(2);
-      return (
-        <p className="mb-0 detalles-product text-muted small" key={`${productCart.id}-${index}`}>
-          • {data.count > 1 && <strong>{data.count}x </strong>}
-          {name}
-          {data.add_price > 0 && <span className="ms-1">(= {totalOptionPrice} €)</span>}
-        </p>
-      );
-    });
+    const options = Object.entries(grouped);
+    
+    // Si no hay opciones, no renderizamos nada para no ocupar espacio
+    if (options.length === 0) return null;
+
+    return (
+      <div className="mt-1 ps-2 border-start border-2">
+        {options.map(([name, data], index) => {
+            const totalOptionPrice = (data.count * data.add_price).toFixed(2);
+            return (
+                <div className="text-muted small lh-sm" key={`${productCart.id}-${index}`} style={{ fontSize: '0.75rem' }}>
+                    {data.count > 1 && <span className="fw-bold text-dark">{data.count}x </span>}
+                    {name}
+                    {data.add_price > 0 && <span className="ms-1">(= {totalOptionPrice} €)</span>}
+                </div>
+            );
+        })}
+      </div>
+    );
   };
 
   const isFormValid = customerData.name && customerData.date && customerData.address;
@@ -250,7 +249,6 @@ const SidebarOffCanvas = () => {
     const total = calculateTotal();
     const deposit = total * 0.25;
     const remaining = total * 0.75;
-
     const selectedDateObj = customerData.date ? new Date(`${customerData.date}T12:00:00`) : null;
 
     return (
@@ -264,79 +262,31 @@ const SidebarOffCanvas = () => {
 
           <div className="mb-3">
             <label className="form-label small fw-bold mb-1"><FaUser className="me-1 text-muted" /> Nombre Completo</label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              value={customerData.name}
-              onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })}
-            />
+            <input type="text" className="form-control form-control-sm" value={customerData.name} onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })} />
           </div>
 
           <div className="mb-3 d-flex flex-column">
             <label className="form-label small fw-bold mb-1"><FaCalendarAlt className="me-1 text-muted" /> Fecha de Entrega</label>
-            <DatePicker
-              selected={selectedDateObj}
-              onChange={handleDateChange}
-              minDate={new Date()}
-              excludeDateIntervals={excludedIntervals}
-              dateFormat="dd/MM/yyyy"
-              locale="es" // <--- AQUÍ APLICAMOS EL ESPAÑOL
-              placeholderText="Selecciona una fecha"
-              className="form-control form-control-sm w-100"
-              wrapperClassName="w-100"
-            />
-            {dateWarning && (
-              <div
-                className={`mt-1 fw-bold ${dateWarning.includes('✅') ? 'text-success' : 'text-warning'}`}
-                style={{ fontSize: '0.7rem' }}
-              >
-                {dateWarning}
-              </div>
-            )}
+            <DatePicker selected={selectedDateObj} onChange={handleDateChange} minDate={new Date()} excludeDateIntervals={excludedIntervals} dateFormat="dd/MM/yyyy" locale="es" placeholderText="Selecciona una fecha" className="form-control form-control-sm w-100" wrapperClassName="w-100" />
+            {dateWarning && <div className={`mt-1 fw-bold ${dateWarning.includes('✅') ? 'text-success' : 'text-warning'}`} style={{ fontSize: '0.7rem' }}>{dateWarning}</div>}
           </div>
 
           <div className="mb-4">
             <label className="form-label small fw-bold mb-1"><FaMapMarkerAlt className="me-1 text-muted" /> Lugar de Entrega</label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              value={customerData.address}
-              onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
-            />
+            <input type="text" className="form-control form-control-sm" value={customerData.address} onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })} />
           </div>
 
           <div className="bg-light p-3 rounded mb-3 border">
             <h6 className="fw-bold border-bottom pb-2 mb-2 small">Resumen de Pago</h6>
-            <div className="d-flex justify-content-between small mb-2">
-              <span>Total:</span>
-              <span className="fw-bold">{total.toFixed(2)} €</span>
-            </div>
-            <div className="mb-2">
-              <div className="d-flex justify-content-between text-primary small align-items-center">
-                <span className="fw-bold">Señal para reservar (25%):</span>
-                <span className="fw-bold">{deposit.toFixed(2)} €</span>
-              </div>
-              <p className="m-0 text-muted fst-italic" style={{ fontSize: '0.75rem' }}>
-                (Se abonará por Bizum/Transferencia tras recibir instrucciones)
-              </p>
-            </div>
-            <div className="d-flex justify-content-between text-muted small pt-2 border-top">
-              <span>Restante a la entrega (75%):</span>
-              <span>{remaining.toFixed(2)} €</span>
-            </div>
+            <div className="d-flex justify-content-between small mb-2"><span>Total:</span><span className="fw-bold">{total.toFixed(2)} €</span></div>
+            <div className="mb-2"><div className="d-flex justify-content-between text-primary small align-items-center"><span className="fw-bold">Señal para reservar (25%):</span><span className="fw-bold">{deposit.toFixed(2)} €</span></div><p className="m-0 text-muted fst-italic" style={{ fontSize: '0.75rem' }}>(Se abonará por Bizum/Transferencia tras recibir instrucciones)</p></div>
+            <div className="d-flex justify-content-between text-muted small pt-2 border-top"><span>Restante a la entrega (75%):</span><span>{remaining.toFixed(2)} €</span></div>
           </div>
 
-          <p className="text-muted x-small text-center mb-3">
-            Se abrirá WhatsApp con el pedido listo para enviar.
-          </p>
+          <p className="text-muted x-small text-center mb-3">Se abrirá WhatsApp con el pedido listo para enviar.</p>
 
           <div className="d-grid gap-2">
-            <button
-              type="button"
-              className={`btn btn-success fw-bold py-2 ${!isFormValid ? 'disabled' : ''}`}
-              onClick={handleConfirmOrder}
-              disabled={!isFormValid}
-            >
+            <button type="button" className={`btn btn-success fw-bold py-2 ${!isFormValid ? 'disabled' : ''}`} onClick={handleConfirmOrder} disabled={!isFormValid}>
               <FaWhatsapp className="me-2" size={20} /> ENVIAR PEDIDO
             </button>
           </div>
@@ -358,20 +308,48 @@ const SidebarOffCanvas = () => {
             <p className="text-center mt-5">Tu carrito está vacío.</p>
           ) : (
             cart.map((product, index) => (
-              <div className="row mb-3 pb-3 border-bottom align-items-center" key={`${product.id}-${index}`}>
-                <div className="col-2">
-                  <img src={product.image} className="img-fluid rounded" alt={product.name} />
+              /* --- AQUÍ ESTÁ EL CAMBIO PRINCIPAL EN EL DISEÑO DE CADA ITEM --- */
+              <div className="d-flex align-items-start gap-3 mb-3 pb-3 border-bottom" key={`${product.id}-${index}`}>
+                
+                {/* 1. CONTENEDOR DE IMAGEN FIJO: Esto asegura que todas las imágenes midan lo mismo */}
+                <div style={{ width: "70px", height: "70px", flexShrink: 0 }}>
+                    <img
+                        src={product.image}
+                        className="img-fluid rounded border"
+                        alt={product.name}
+                        // 'object-fit: cover' recorta la imagen para llenar el cuadrado sin deformarla
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                    />
                 </div>
-                <div className="col-7">
-                  <h6 className="fw-bold mb-1">{product.name}</h6>
-                  {renderGroupedOptionsUI(product)}
-                </div>
-                <div className="col-3 text-end">
-                  <div className="small text-muted">{product.quantity}x</div>
-                  <div className="fw-bold">{(product.price * product.quantity).toFixed(2)}€</div>
-                  <button className="btn btn-sm text-danger p-0 mt-2" onClick={() => removeFromCart(product.cartItemId)}>
-                    <RiDeleteBin6Line />
-                  </button>
+
+                {/* 2. CONTENIDO DEL PRODUCTO: Usamos flex-grow para que ocupe el resto */}
+                <div className="flex-grow-1">
+                    {/* Fila superior: Nombre y Precio Total */}
+                    <div className="d-flex justify-content-between align-items-start">
+                        <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>
+                            {product.name}
+                        </h6>
+                        <span className="fw-bold text-nowrap ms-2">
+                            {(product.price * product.quantity).toFixed(2)}€
+                        </span>
+                    </div>
+
+                    {/* Fila inferior: Cantidad, Opciones y Botón eliminar */}
+                    <div className="d-flex justify-content-between align-items-end mt-1">
+                        <div>
+                             <small className="text-muted fw-bold" style={{fontSize: '0.8rem'}}>Cant: {product.quantity}</small>
+                             {/* Renderizado de opciones mejorado */}
+                             {renderGroupedOptionsUI(product)}
+                        </div>
+
+                        <button 
+                            className="btn btn-link text-danger p-0 border-0" 
+                            onClick={() => removeFromCart(product.cartItemId)}
+                            title="Eliminar producto"
+                        >
+                            <RiDeleteBin6Line size={18} />
+                        </button>
+                    </div>
                 </div>
               </div>
             ))
@@ -382,25 +360,14 @@ const SidebarOffCanvas = () => {
           <div className="mb-3">
             <label className="small fw-bold mb-1">Cupón de descuento</label>
             <div className="input-group input-group-sm">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Código"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-              />
-              <button className="btn btn-dark" onClick={applyCoupon} disabled={loadingDiscount}>
-                {loadingDiscount ? '...' : 'Aplicar'}
-              </button>
+              <input type="text" className="form-control" placeholder="Código" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+              <button className="btn btn-dark" onClick={applyCoupon} disabled={loadingDiscount}>{loadingDiscount ? '...' : 'Aplicar'}</button>
             </div>
             {couponMessage && <div className={`x-small mt-1 fw-bold ${discountAmount > 0 ? 'text-success' : 'text-danger'}`}>{couponMessage}</div>}
           </div>
 
           {discountAmount > 0 && (
-            <div className="d-flex justify-content-between mb-1 text-danger fw-bold">
-              <span>Descuento:</span>
-              <span>-{discountAmount.toFixed(2)} €</span>
-            </div>
+            <div className="d-flex justify-content-between mb-1 text-danger fw-bold"><span>Descuento:</span><span>-{discountAmount.toFixed(2)} €</span></div>
           )}
 
           <div className="d-flex justify-content-between align-items-center mb-3">
@@ -409,16 +376,12 @@ const SidebarOffCanvas = () => {
           </div>
 
           {cart.length > 0 && (
-            <button
-              className="btn btn-success w-100 fw-bold py-2 shadow-sm"
-              onClick={() => setShowCheckoutModal(true)}
-            >
+            <button className="btn btn-success w-100 fw-bold py-2 shadow-sm" onClick={() => setShowCheckoutModal(true)}>
               CONTINUAR PEDIDO
             </button>
           )}
         </div>
       </div>
-
       {renderCheckoutModal()}
     </>
   );
