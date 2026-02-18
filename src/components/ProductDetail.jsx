@@ -184,24 +184,49 @@ const ProductDetail = () => {
     if (isValidId === false) return <div className="container my-5 text-center"><h1>❌ Error</h1></div>;
     if (loading || !productId) return <div className="container my-5 text-center">Cargando...</div>;
 
+    // Detectar si es móvil para ajustar tamaño de fuente del badge
+    const isMobile = window.innerWidth < 768; 
+
     return (
         <div className="container my-5">
 
             <div className="row">
-                {/* COLUMNA IZQUIERDA: IMAGEN + INGREDIENTES */}
+                {/* COLUMNA IZQUIERDA: IMAGEN + TAG */}
                 <div className="col-md-6 mb-4">
-                    {/* --- IMAGEN CON TAMAÑO FIJO Y RECORTE --- */}
-                    <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="img-fluid rounded shadow mb-4" 
-                        style={{ 
-                            width: "100%",          // Ocupa todo el ancho de la columna
-                            height: "500px",        // Altura fija (ajusta este valor si la quieres más alta o baja)
-                            objectFit: "cover"      // CLAVE: Recorta la imagen para llenar el espacio sin deformar
-                        }}
-                    />
-                    {/* ---------------------------------------- */}
+                    {/* --- CONTENEDOR RELATIVO PARA POSICIONAR EL BADGE --- */}
+                    <div className="position-relative">
+                        {/* --- IMAGEN CON TAMAÑO FIJO Y RECORTE --- */}
+                        <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="img-fluid rounded shadow mb-4" 
+                            style={{ 
+                                width: "100%",          
+                                height: "500px",        
+                                objectFit: "cover"      
+                            }}
+                        />
+
+                        {/* --- ETIQUETA DESTACADA (Igual que en ProductCard) --- */}
+                        {product.tag?.title && (
+                            <span 
+                                className="position-absolute top-0 start-0 m-3 badge shadow"
+                                style={{ 
+                                    backgroundColor: product.tag.color || "#000",
+                                    color: "#fff",
+                                    fontSize: isMobile ? "0.9rem" : "1rem", 
+                                    fontWeight: "700",
+                                    textTransform: "capitalize",
+                                    zIndex: 10,
+                                    borderRadius: "5px",
+                                    padding: "8px 12px"
+                                }}
+                            >
+                                {product.tag.title}
+                            </span>
+                        )}
+                        {/* ------------------------------------------------ */}
+                    </div>
                 </div>
 
                 {/* COLUMNA DERECHA: INFO PRODUCTO + COMPRA */}
@@ -293,6 +318,7 @@ const ProductDetail = () => {
                     </div>
                 </div>
 
+                {/* --- SECCIÓN DE INGREDIENTES Y ALÉRGENOS (POSICIÓN ORIGINAL) --- */}
                 <div className="col-md-12 mb-0">
                     {product.ingredients && (
                         <div className="p-3 bg-light rounded border border-secondary border-opacity-25">
