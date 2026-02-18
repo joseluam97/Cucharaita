@@ -24,7 +24,7 @@ const App = () => {
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
 
   const { insertAccess } = useLogAccess();
-const MODE_WEB = import.meta.env.MODE
+  const MODE_WEB = import.meta.env.MODE;
 
   // --- LOG AVANZADO DE USUARIO ---
   useEffect(() => {
@@ -34,15 +34,12 @@ const MODE_WEB = import.meta.env.MODE
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         
         // 2. Obtener Ubicación e IP
-        // CAMBIO: Usamos ipwho.is porque ipapi.co bloquea las peticiones desde Vercel (CORS)
-        const response = await fetch('https://ipwho.is/');
-        const locationData = await response.json();
+        // CAMBIO: Usamos geojs.io porque es la más permisiva con CORS y no requiere API Key
+        const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        
+        if (!response.ok) throw new Error("Error conectando con API de GeoJS");
 
-        // Verificamos si la API respondió correctamente
-        if (!locationData.success) {
-            console.warn("La API de IP falló:", locationData.message);
-            // Podrías decidir continuar sin ubicación o detenerte aquí
-        }
+        const locationData = await response.json();
 
         const technicalData = {
           fecha: new Date().toLocaleString(),
@@ -53,20 +50,24 @@ const MODE_WEB = import.meta.env.MODE
           referrer: document.referrer || "Acceso directo",
           url: window.location.href,
           
-          // --- NUEVOS CAMPOS (Adaptados a ipwho.is) ---
+          // --- NUEVOS CAMPOS (Adaptados a GeoJS) ---
           ip: locationData.ip || "Desconocida",
           ciudad: locationData.city || "Desconocida",
           region: locationData.region || "Desconocida",
-          pais: locationData.country || "Desconocido", // "country" en vez de "country_name"
-          proveedor_internet: locationData.connection?.isp || "Desconocido", // Viene dentro de "connection"
-          codigo_postal: locationData.postal || "Desconocido",
+          pais: locationData.country || "Desconocido", 
+          proveedor_internet: locationData.organization_name || "Desconocido", // GeoJS suele dar el ISP aquí
+          codigo_postal: "No disponible en GeoJS", // GeoJS prioriza velocidad y no suele dar CP exacto
           lat_long: locationData.latitude && locationData.longitude 
                     ? `${locationData.latitude}, ${locationData.longitude}` 
                     : "Desconocido"
         };
         
+        // En desarrollo mostramos el log para verificar que funciona
+        if (MODE_WEB === "development") {
+            console.log("✅ Datos obtenidos (GeoJS):", technicalData);
+        }
+
         if (MODE_WEB === "production") {
-          // Asegúrate de que insertAccess provenga de tu hook useLogAccess
           await insertAccess(technicalData);
         }
 
@@ -77,7 +78,7 @@ const MODE_WEB = import.meta.env.MODE
 
     logUserAccess();
 
-  }, []); // Array vacío para ejecutar solo al montar
+  }, []); 
   // -------------------------------
 
   useEffect(() => {
