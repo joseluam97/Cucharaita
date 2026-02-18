@@ -47,8 +47,9 @@ const useProducts = ({ id = null }) => {
                     query = query.eq('id', productId).single();
                 } else {
                     query = query
-                        .order('type', { ascending: true })
-                        .order('name', { ascending: false });
+                        .order('type', { ascending: false })
+                        .order('tag', { ascending: true })
+                        .order('name', { ascending: true });
                 }
                 
                 // 🛑 Filtrar por activo para la lista completa, si no se está buscando por ID
@@ -62,6 +63,7 @@ const useProducts = ({ id = null }) => {
                     throw fetchError;
                 }
                 
+                console.log("fetchedData:", fetchedData);
                 // Si se busca un producto único y no se encuentra o no está activo
                 if (productId && (!fetchedData || fetchedData.active === false)) {
                     setError({ message: 'Producto no encontrado' });
