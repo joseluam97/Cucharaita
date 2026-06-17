@@ -99,7 +99,7 @@ const Home = () => {
     <div className="container mt-5 mb-0">
       <TitleTypeWriter />
 
-      <div
+      {/*<div
         className="d-flex flex-wrap justify-content-center gap-2 gap-md-3 mb-2 mt-0 p-2 p-md-3 rounded shadow-sm"
         style={{ backgroundColor: '#c7d088' }}
       >
@@ -120,7 +120,7 @@ const Home = () => {
             {type?.name}
           </button>
         ))}
-      </div>
+      </div>*/}
 
       <div className="row">
         {loading && isSimulatedLoading ? (
@@ -130,7 +130,7 @@ const Home = () => {
             {listProduct?.length > 0 ? (
               <div className="col-12">
                 {/*<ProductsList products={listProduct} />*/}
-                <p className="text-center">En estos momentos nos encontramos cerrados. Volvemos despues del verano.</p>
+                <h2 className="text-center">En estos momentos nos encontramos cerrados. Volvemos despues del verano.</h2>
               </div>
             ) : (
               <div className="col-12">
