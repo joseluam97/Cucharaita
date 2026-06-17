@@ -129,7 +129,8 @@ const Home = () => {
           <>
             {listProduct?.length > 0 ? (
               <div className="col-12">
-                <ProductsList products={listProduct} />
+                {/*<ProductsList products={listProduct} />*/}
+                <p className="text-center">En estos momentos nos encontramos cerrados. Volvemos despues del verano.</p>
               </div>
             ) : (
               <div className="col-12">
