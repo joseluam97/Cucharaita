@@ -121,7 +121,7 @@ const App = () => {
           <p className="text-gray-600 text-lg md:text-xl font-sans mb-10 max-w-lg leading-relaxed">
             <br />
             Nuestra web se está actualizando para ofrecerte una experiencia aún más dulce. <br />
-            Vuelvemos despues de verano.
+            Volvemos despues de verano.
           </p>
 
           <div className="flex space-x-2 justify-center items-center">
