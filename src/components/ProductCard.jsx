@@ -5,18 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { Base64 } from 'js-base64';
 
 const ProductCard = ({ product }) => {
-  const isMobile = window.innerWidth < 768;
   const { addToCart } = useCartStore();
   const navigate = useNavigate();
 
-  // 1. Verificamos disponibilidad
   const isAvailable = product.available; 
-  
-  // 2. 🛑 Verificamos si hay OFERTA
-  // Si offer_price existe y es mayor a 0, hay oferta.
   const hasOffer = product.offer_price && Number(product.offer_price) > 0;
-  
-  // Definimos el precio final a mostrar/usar
   const finalPrice = hasOffer ? Number(product.offer_price) : Number(product.price);
 
   const handleNavigation = () => {
@@ -27,6 +20,7 @@ const ProductCard = ({ product }) => {
   };
 
   const handleButtonAction = (e) => {
+    e.stopPropagation();
     if (!isAvailable) return;
     
     if (product?.has_options) {
@@ -34,7 +28,7 @@ const ProductCard = ({ product }) => {
     } else {
       const productToAdd = {
         ...product,
-        price: finalPrice, // 🛑 Añadimos al carrito con el precio de oferta si existe
+        price: finalPrice, 
         selectedOptions: null,
         quantity: 1,
       };
@@ -43,94 +37,71 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="text-decoration-none text-dark h-100">
-      <div className={`card custom-card h-100 d-flex flex-column shadow-sm ${!isAvailable ? 'bg-light' : ''}`}>
+    <div className="w-full h-full text-brand-dark no-underline">
+      {/* Contenedor principal con relleno (p-2) para crear un marco alrededor de la imagen */}
+      <div className={`flex flex-col h-full rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-brand-cream/50 p-2 md:p-3 ${isAvailable ? 'bg-brand-white' : 'bg-gray-50'}`}>
         
         <div 
-          className={`flex-grow-1 ${isAvailable ? 'cursor-pointer' : ''}`} 
+          className={`flex-grow flex flex-col ${isAvailable ? 'cursor-pointer' : ''}`} 
           onClick={handleNavigation}
         >
-          <div className="position-relative">
+          {/* MARCO DE LA IMAGEN: Proporción 1:1 estricta, borde y esquinas muy redondeadas */}
+          <div className="relative w-full aspect-square rounded-[1.5rem] overflow-hidden shadow-sm border-[3px] border-brand-cream/30">
             <img
               src={product.image}
-              className="card-img-top"
               alt={product.name}
-              style={{ 
-                height: isMobile ? "150px" : "250px", 
-                objectFit: "cover",
-                width: "100%",
-                opacity: isAvailable ? 1 : 0.6,
-                filter: isAvailable ? 'none' : 'grayscale(100%)' 
-              }}
+              className={`w-full h-full object-cover transition-transform duration-500 hover:scale-105 ${!isAvailable ? 'opacity-50 grayscale' : 'opacity-100'}`}
             />
 
-            {/* Letrero NO DISPONIBLE */}
+            {/* Capa de producto agotado */}
             {!isAvailable && (
-              <div 
-                className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.4)", zIndex: 20 }}
-              >
-                <span className="badge bg-danger fs-6 shadow px-3 py-2 text-uppercase">
-                  No disponible
+              <div className="absolute inset-0 bg-brand-cream/60 z-20 flex items-center justify-center backdrop-blur-[2px]">
+                <span className="bg-brand-primary text-brand-white shadow-lg px-3 md:px-4 py-1.5 md:py-2 uppercase font-bold tracking-widest rounded-full text-xs md:text-sm">
+                  Agotado
                 </span>
               </div>
             )}
 
-            {/* 🛑 BADGE DE OFERTA (Si hay oferta y está disponible) */}
+            {/* Etiquetas Superiores */}
             {isAvailable && hasOffer && (
-               <span 
-                 className="position-absolute top-0 end-0 m-1 badge shadow bg-danger"
-                 style={{ zIndex: 15, fontSize: "0.8rem" }}
-               >
+               <span className="absolute top-2 right-2 z-10 text-[0.65rem] md:text-xs bg-brand-accent text-brand-primary font-extrabold px-2 py-1 rounded-full border border-brand-primary shadow-sm">
                  ¡OFERTA!
                </span>
             )}
 
-            {/* ETIQUETA DESTACADA (Tag) */}
             {isAvailable && product.tag?.title && (
               <span 
-                className="position-absolute top-0 start-0 m-1 badge shadow"
-                style={{ 
-                  backgroundColor: product.tag.color || "#000",
-                  color: "#fff",
-                  fontSize: isMobile ? "0.7rem" : "0.90rem",
-                  fontWeight: "700",
-                  textTransform: "capitalize",
-                  zIndex: 10,
-                  borderRadius: "5px"
-                }}
+                className="absolute top-2 left-2 z-10 text-brand-white text-[0.65rem] md:text-xs font-bold capitalize px-2 py-1 rounded-full shadow-sm"
+                style={{ backgroundColor: product.tag.color || "var(--color-brand-secondary)" }}
               >
                 {product.tag.title}
               </span>
             )}
 
-            {/* Badge de Categoría (Movido un poco si hay oferta para que no se solapen) */}
-            <span 
-                className="badge custom-badge position-absolute top-0 end-0" 
-                style={{ zIndex: 14, marginTop: hasOffer ? '25px' : '0' }} // Pequeño ajuste si hay oferta
-            >
+            {/* Etiqueta de Categoría Flotante Abajo */}
+            <span className="absolute bottom-2 left-2 z-10 bg-brand-white/90 text-brand-primary font-bold text-[0.65rem] md:text-xs px-2 md:px-3 py-1 rounded-full shadow-sm backdrop-blur-sm">
               {product.type.name}
             </span>
           </div>
 
-          <div className="card-body d-flex flex-column p-2">
-            <h5 className={`card-title mb-1 ${!isAvailable ? 'text-muted' : ''}`} style={{ fontSize: isMobile ? "0.9rem" : "1.1rem" }}>
+          {/* Textos y Precios */}
+          <div className="flex flex-col pt-3 px-1 md:px-2 flex-grow">
+            <h5 className={`font-bold text-sm md:text-base mb-1 line-clamp-2 leading-tight ${!isAvailable ? 'text-gray-400' : 'text-brand-dark'}`}>
                 {product.name}
             </h5>
 
-            <div className="mt-auto pt-2">
-              {/* 🛑 LOGICA DE PRECIOS VISUAL */}
+            <div className="mt-auto pt-1 flex items-center flex-wrap gap-2">
               {hasOffer && isAvailable ? (
-                  <div>
-                      <span className="text-danger fw-bold me-2" style={{ fontSize: isMobile ? "0.9rem" : "1.15rem" }}>
+                  <>
+                      <span className="font-extrabold text-base md:text-lg text-brand-primary">
                           {finalPrice.toFixed(2)} €
                       </span>
-                      <span className="text-muted text-decoration-line-through small">
+                      <span className="text-gray-400 line-through text-xs">
                           {Number(product.price).toFixed(2)} €
                       </span>
-                  </div>
+                  </>
               ) : (
-                  <p className={`mb-0 fw-bold ${!isAvailable ? 'text-muted text-decoration-line-through' : ''}`} style={{ fontSize: isMobile ? "0.85rem" : "1.1rem" }}>
+                  <p className={`mb-0 font-extrabold text-base md:text-lg ${!isAvailable ? 'text-gray-400 line-through' : 'text-brand-primary'}`}>
                     {Number(product.price).toFixed(2)} €
                   </p>
               )}
@@ -138,37 +109,25 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        <div className="card-footer bg-transparent border-0 pt-0 pb-3 px-1">
+        {/* Zona del Botón: Ahora es rounded-full */}
+        <div className="bg-transparent border-none mt-3 px-1 md:px-2 pb-1">
           <button
             disabled={!isAvailable} 
-            className={`btn w-100 btn-sm d-flex align-items-center justify-content-center gap-1 ${
-                !isAvailable 
-                ? 'btn-secondary' 
-                : (product?.has_options ? 'btn-outline-dark' : 'btn-cart')
-            }`}
+            className={`w-full flex items-center justify-center gap-2 py-2 md:py-2.5 rounded-full font-bold text-xs md:text-sm transition-all duration-200 
+              ${!isAvailable 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
+                : product?.has_options 
+                  ? 'bg-brand-cream text-brand-primary border border-brand-primary hover:bg-brand-primary hover:text-brand-white shadow-sm' 
+                  : 'bg-brand-primary text-brand-white hover:bg-brand-secondary shadow-md hover:shadow-lg'
+              }`}
             onClick={handleButtonAction}
-            style={{ 
-              fontSize: isMobile ? "0.68rem" : "0.85rem", 
-              paddingLeft: "2px",
-              paddingRight: "2px",
-              cursor: !isAvailable ? 'not-allowed' : 'pointer'
-            }}
           >
             {!isAvailable ? (
-                <>
-                  <span>Agotado</span>
-                  <BsSlashCircle size={isMobile ? 12 : 16} />
-                </>
+                <><span>Agotado</span><BsSlashCircle className="text-base" /></>
             ) : product?.has_options ? (
-              <>
-                <span>Seleccionar opciones</span> 
-                <BsBoxSeam size={isMobile ? 12 : 16} />
-              </>
+              <><span>Opciones</span><BsBoxSeam className="text-base" /></>
             ) : (
-              <>
-                <span>Agregar al carrito</span> 
-                <BsCartPlus size={isMobile ? 14 : 18} />
-              </>
+              <><span>Añadir</span><BsCartPlus className="text-base text-brand-white md:text-lg" /></>
             )}
           </button>
         </div>

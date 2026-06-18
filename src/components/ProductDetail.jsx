@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import useProducts from "../hooks/useProducts";
 import useCartStore from "../store/cartStore";
-import { BsDashCircle, BsPlusCircle, BsXCircleFill, BsSlashCircle } from "react-icons/bs";
+import { BsDashCircle, BsPlusCircle, BsXCircleFill, BsSlashCircle, BsBagCheckFill } from "react-icons/bs";
 import { Base64 } from 'js-base64';
 import useOptions from "../hooks/useOptions";
 
@@ -207,17 +207,15 @@ const ProductDetail = () => {
     const hasOffer = product.offer_price && Number(product.offer_price) > 0;
     const basePrice = getBasePrice(product);
 
-    return (
-        <div className="container my-5">
-            <div className="row">
-                <div className="col-md-6 mb-4">
+    return (<div className="container my-5 pt-4">
+            <div className="row bg-white p-3 p-md-5 rounded-4 shadow-sm" style={{ border: '1px solid var(--cucharaita-secundario-2)' }}>
+                <div className="col-md-6 mb-4 mb-md-0">
                     <div className="position-relative">
                         <img 
                             src={product.image} 
                             alt={product.name} 
-                            className="img-fluid rounded shadow mb-4" 
+                            className="img-fluid rounded-4 shadow-sm mb-4 w-100" 
                             style={{ 
-                                width: "100%",          
                                 height: "500px",        
                                 objectFit: "cover",
                                 opacity: isAvailable ? 1 : 0.6,
@@ -226,83 +224,71 @@ const ProductDetail = () => {
                         />
 
                         {!isAvailable && (
-                            <div 
-                                className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                                style={{ backgroundColor: "rgba(255, 255, 255, 0.4)", zIndex: 20 }}
-                            >
-                                <span className="badge bg-danger fs-4 shadow px-4 py-3 text-uppercase">
-                                    Agotado / No disponible
+                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center rounded-4" style={{ backgroundColor: "rgba(242, 232, 181, 0.7)", zIndex: 20 }}>
+                                <span className="badge shadow px-4 py-3 text-uppercase fs-5" style={{ backgroundColor: 'var(--cucharaita-principal)', color: 'var(--text-light)' }}>
+                                    Agotado temporalmente
                                 </span>
                             </div>
                         )}
 
                         {isAvailable && hasOffer && (
-                             <span className="position-absolute top-0 end-0 m-3 badge shadow bg-danger fs-5" style={{ zIndex: 15 }}>
-                                ¡OFERTA!
+                             <span className="position-absolute top-0 end-0 m-3 badge shadow px-3 py-2 fs-6" style={{ zIndex: 15, backgroundColor: 'var(--cucharaita-enfasis)', color: 'var(--cucharaita-principal)' }}>
+                                ¡OFERTA ESPECIAL!
                              </span>
-                        )}
-
-                        {isAvailable && product.tag?.title && (
-                            <span 
-                                className="position-absolute top-0 start-0 m-3 badge shadow"
-                                style={{ 
-                                    backgroundColor: product.tag.color || "#000",
-                                    color: "#fff",
-                                    fontSize: isMobile ? "0.9rem" : "1rem", 
-                                    fontWeight: "700",
-                                    textTransform: "capitalize",
-                                    zIndex: 10,
-                                    borderRadius: "5px",
-                                    padding: "8px 12px"
-                                }}
-                            >
-                                {product.tag.title}
-                            </span>
                         )}
                     </div>
                 </div>
 
-                <div className="col-md-6">
-                    <span className="badge bg-secondary mb-2">{product.type?.name}</span>
-                    <h1 className="fw-bold">{product.name}</h1>
-                    <p className="lead">{product.description}</p>
+                <div className="col-md-6 d-flex flex-column justify-content-center px-md-4">
+                    <div className="mb-2">
+                        <span className="badge px-3 py-2" style={{ backgroundColor: 'var(--cucharaita-secundario-2)', color: 'var(--cucharaita-principal)', fontSize: '0.85rem' }}>
+                            {product.type?.name}
+                        </span>
+                    </div>
+                    
+                    <h1 className="fw-bold mb-3" style={{ color: 'var(--cucharaita-principal)', fontFamily: "'Cooper Black', 'Baloo 2', serif", fontSize: '2.5rem' }}>
+                        {product.name}
+                    </h1>
+                    
+                    <p className="lead text-muted mb-4" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
+                        {product.description}
+                    </p>
 
-                    <div className="h3 mb-4 fw-bold">
-                         {/* 🛑 LÓGICA DE VISUALIZACIÓN DE PRECIO EN DETALLE */}
+                    <div className="h2 mb-4 fw-bold p-3 rounded-3" style={{ backgroundColor: 'var(--cucharaita-secundario-3)', display: 'inline-block' }}>
                          {hasOffer ? (
                              <>
-                                <span className="text-danger me-2">{Number(precioWithAdd).toFixed(2)} €</span>
-                                {/* Si no se han añadido opciones extra, mostramos el precio original tachado */}
+                                <span style={{ color: 'var(--cucharaita-principal)' }} className="me-3">{Number(precioWithAdd).toFixed(2)} €</span>
                                 {precioWithAdd === basePrice && (
-                                    <small className="text-muted text-decoration-line-through fs-6">
+                                    <small className="text-muted text-decoration-line-through fs-5">
                                         {Number(product.price).toFixed(2)} €
                                     </small>
                                 )}
                              </>
                          ) : (
-                             <span className="text-success">{Number(precioWithAdd).toFixed(2)} €</span>
+                             <span style={{ color: 'var(--cucharaita-principal)' }}>{Number(precioWithAdd).toFixed(2)} €</span>
                          )}
                     </div>
 
                     {!isAvailable && (
-                        <div className="alert alert-warning border-warning d-flex align-items-center mb-4">
-                            <BsSlashCircle className="me-2" size={20} />
-                            <strong>Lo sentimos, este producto no está disponible en este momento.</strong>
+                        <div className="alert d-flex align-items-center mb-4 border-0" style={{ backgroundColor: 'var(--cucharaita-secundario-3)', color: 'var(--cucharaita-principal)' }}>
+                            <BsSlashCircle className="me-3" size={24} />
+                            <strong>Estamos horneando más unidades. ¡Vuelve pronto!</strong>
                         </div>
                     )}
 
+                    {/* SECCIÓN DE OPCIONES */}
                     <div style={{ opacity: isAvailable ? 1 : 0.5, pointerEvents: isAvailable ? 'auto' : 'none' }}>
                         {listOptionsProduct.map((group) => (
-                            <div key={group.id} className="mb-4 p-3 border rounded shadow-sm bg-white">
-                                <h6 className="fw-bold d-flex justify-content-between align-items-center">
+                            <div key={group.id} className="mb-4">
+                                <h6 className="fw-bold d-flex justify-content-between align-items-center mb-3" style={{ color: 'var(--text-dark)' }}>
                                     {group.name}
                                     {group.option_select > 0 && (
-                                        <span className="badge rounded-pill bg-light text-dark border">
+                                        <span className="badge rounded-pill" style={{ backgroundColor: 'var(--cucharaita-secundario-1)', color: 'var(--text-light)' }}>
                                             {(selectedGroupOptions[group.id]?.length || 0)} / {group.option_select}
                                         </span>
                                     )}
                                 </h6>
-                                <div className="d-flex flex-wrap gap-2 mt-2">
+                                <div className="d-flex flex-wrap gap-2">
                                     {group.options.map((option) => {
                                         const count = getOptionCount(group.id, option.id);
                                         const limitReached = group.multiple && group.option_select > 0 && (selectedGroupOptions[group.id]?.length >= group.option_select);
@@ -310,13 +296,19 @@ const ProductDetail = () => {
                                         return (
                                             <button
                                                 key={option.id}
-                                                className={`btn btn-sm d-flex align-items-center gap-2 ${count > 0 ? "btn-dark" : "btn-outline-dark"}`}
+                                                className="btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-2 shadow-sm"
                                                 onClick={() => handleOptionSelect(group, option)}
                                                 disabled={!isAvailable || (limitReached && !(!group.multiple && count > 0))}
+                                                style={{
+                                                    backgroundColor: count > 0 ? 'var(--cucharaita-principal)' : 'var(--text-light)',
+                                                    color: count > 0 ? 'var(--text-light)' : 'var(--cucharaita-principal)',
+                                                    border: `1px solid var(--cucharaita-principal)`,
+                                                    transition: 'all 0.2s ease'
+                                                }}
                                             >
                                                 {option.name}
-                                                {option.add_price > 0 && <small>(+{option.add_price}€)</small>}
-                                                {count > 0 && <span className="badge bg-primary">{count}</span>}
+                                                {option.add_price > 0 && <small className="opacity-75">(+{option.add_price}€)</small>}
+                                                {count > 0 && <span className="badge bg-light text-primary rounded-circle ms-1">{count}</span>}
                                             </button>
                                         );
                                     })}
@@ -325,86 +317,38 @@ const ProductDetail = () => {
                         ))}
                     </div>
 
-                    {Object.values(selectedGroupOptions).some(s => Array.isArray(s) ? s.length > 0 : !!s) && (
-                        <div className="mb-4">
-                            <p className="fw-bold mb-2">Elementos añadidos:</p>
-                            <div className="list-group shadow-sm">
-                                {listOptionsProduct.map(group => {
-                                    const selection = selectedGroupOptions[group.id];
-                                    if (!selection || (Array.isArray(selection) && selection.length === 0)) return null;
-
-                                    const items = Array.isArray(selection) ? selection : [selection];
-                                    return items.map((opt, idx) => (
-                                        <div key={opt.tempId || idx} className="list-group-item d-flex justify-content-between align-items-center py-2">
-                                            <div>
-                                                <span className="fw-bold text-primary mr-2">•</span> {opt.name}
-                                                <small className="text-muted ms-2">({group.name})</small>
-                                            </div>
-                                            <div className="d-flex align-items-center gap-3">
-                                                {opt.add_price > 0 && <span className="small">+{Number(opt.add_price).toFixed(2)}€</span>}
-                                                {isAvailable && (
-                                                    <BsXCircleFill
-                                                        className="text-danger fs-5"
-                                                        style={{ cursor: 'pointer' }}
-                                                        onClick={() => removeOneInstance(group.id, opt.tempId)}
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                    ));
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="d-flex align-items-center gap-3 pt-3 border-top mt-4">
-                        <div className={`d-flex align-items-center border rounded ${!isAvailable ? 'bg-light text-muted' : ''}`}>
-                            <button 
-                                className="btn btn-link text-dark py-2" 
-                                onClick={decreaseQuantity} 
-                                disabled={!isAvailable || quantity <= 1}
-                            >
-                                <BsDashCircle />
+                    {/* BOTONES DE ACCIÓN */}
+                    <div className="d-flex align-items-center gap-3 pt-4 border-top mt-auto">
+                        <div className={`d-flex align-items-center border-0 rounded-pill shadow-sm px-2 ${!isAvailable ? 'bg-light text-muted' : ''}`} style={{ backgroundColor: 'var(--cucharaita-secundario-3)' }}>
+                            <button className="btn btn-link py-2 border-0" onClick={decreaseQuantity} disabled={!isAvailable || quantity <= 1} style={{ color: 'var(--cucharaita-principal)' }}>
+                                <BsDashCircle size={20} />
                             </button>
-                            <span className="px-3 fw-bold">{quantity}</span>
-                            <button 
-                                className="btn btn-link text-dark py-2" 
-                                onClick={increaseQuantity}
-                                disabled={!isAvailable}
-                            >
-                                <BsPlusCircle />
+                            <span className="px-3 fw-bold fs-5" style={{ color: 'var(--cucharaita-principal)' }}>{quantity}</span>
+                            <button className="btn btn-link py-2 border-0" onClick={increaseQuantity} disabled={!isAvailable} style={{ color: 'var(--cucharaita-principal)' }}>
+                                <BsPlusCircle size={20} />
                             </button>
                         </div>
+                        
                         <button
-                            className={`btn btn-lg flex-grow-1 ${!isAvailable ? 'btn-secondary' : 'btn-dark'}`}
+                            className="btn btn-lg flex-grow-1 rounded-pill shadow d-flex justify-content-center align-items-center gap-2"
                             onClick={handleAddToCart}
                             disabled={!isAvailable || !canAddToCart} 
+                            style={{
+                                backgroundColor: (!isAvailable || !canAddToCart) ? '#e9ecef' : 'var(--cucharaita-principal)',
+                                color: (!isAvailable || !canAddToCart) ? '#6c757d' : 'var(--text-light)',
+                                fontWeight: 'bold',
+                                transition: 'all 0.3s ease',
+                                border: 'none',
+                                padding: '12px'
+                            }}
                         >
+                            <BsBagCheckFill size={20} />
                             {!isAvailable 
-                                ? "Producto Agotado" 
+                                ? "Agotado" 
                                 : `Añadir al carrito (${Number(precioWithAdd * quantity).toFixed(2)} €)`
                             }
                         </button>
                     </div>
-                </div>
-
-                <div className="col-md-12 mb-0">
-                    {product.ingredients && (
-                        <div className="p-3 bg-light rounded border border-secondary border-opacity-25">
-                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.9rem' }}>
-                                Ingredientes
-                            </h6>
-                            <p className="mb-0 text-secondary small fst-italic" style={{ lineHeight: '1.5' }}>
-                                {product.ingredients}
-                            </p>
-                            <h6 className="fw-bold text-dark mb-2 mt-4" style={{ fontSize: '0.9rem' }}>
-                                Alérgenos
-                            </h6>
-                            <p className="mb-0 text-secondary small fst-italic" style={{ lineHeight: '1.5' }}>
-                                {product.allergens}
-                            </p>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

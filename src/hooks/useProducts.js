@@ -63,7 +63,6 @@ const useProducts = ({ id = null }) => {
                     throw fetchError;
                 }
                 
-                console.log("fetchedData:", fetchedData);
                 // Si se busca un producto único y no se encuentra o no está activo
                 if (productId && (!fetchedData || fetchedData.active === false)) {
                     setError({ message: 'Producto no encontrado' });

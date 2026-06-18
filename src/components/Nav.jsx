@@ -5,51 +5,39 @@ import { Link } from "react-router-dom";
 
 const Nav = () => {
     return (
-        // Usamos bg-dark o el color de tu tema
-        <nav className="navbar navbar-expand-lg bg-dark mb-1 custom-navbar fixed-top w-100">
-            <div className="container-fluid">
+        <nav className="navbar navbar-expand-lg w-100 shadow-lg bg-brand-primary py-3 z-50">
+            <div className="container-fluid px-3 px-md-5 d-flex justify-content-between align-items-center relative">
                 
-                {/* 1. Botón Toggler y Logo (Para móviles) */}
-                <button
-                    className="navbar-toggler border-0"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#navbarNav"
-                    aria-controls="navbarNav"
-                    aria-expanded="false"
-                    aria-label="Toggle navigation"
-                >
-                    <CiMenuFries className="menu-icon text-white" />
-                </button>
-                
-                {/* 2. Logo (Se mantiene en la izquierda por defecto en mobile, pero lo centraremos visualmente más adelante) */}
-                {/* El 'Link' es preferible a 'a' con 'href' para navegación interna de React */}
-                <Link className="navbar-brand d-none d-lg-block mx-auto" to="/"> 
-                    <img style={{ width: "100px" }} src={logo} alt="logo" style={{ width: "100px" }} />
+                {/* IZQUIERDA: Botón de Menú */}
+                <div className="d-flex align-items-center z-10">
+                    <button
+                        className="navbar-toggler border-0 shadow-none p-0"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav"
+                        aria-controls="navbarNav"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
+                        {/* Contenedor del icono con Tailwind */}
+                        <div className="shadow-sm bg-brand-cream rounded-xl w-12 h-12 flex items-center justify-center transition-transform duration-200 hover:scale-105">
+                            <CiMenuFries className="text-brand-primary text-2xl font-bold" />
+                        </div>
+                    </button>
+                </div>
+
+                {/* CENTRO: Logo centrado absoluto */}
+                <Link className="navbar-brand m-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0" to="/"> 
+                    <img src={logo} alt="Cucharaita Logo" 
+                         className="w-[300px] md:w-[120px] drop-shadow-md transition-all duration-300"
+                    />
                 </Link>
 
-                {/* 3. Contenedor de elementos colapsables (Menú) 
-                <div className="collapse navbar-collapse" id="navbarNav">
-                    <ul className="navbar-nav mx-auto"> 
-                        <li className="nav-item">
-                            <Link className="nav-link active text-white" aria-current="page" to="/">
-                                Inicio
-                            </Link>
-                        </li>
-                    </ul>
-                </div>*/}
-                
-                {/* 4. Contenedor Derecha: Logo (Mobile) y Carrito */}
-                <div className="d-flex align-items-center">
-                    
-                    {/* Logo solo visible en resoluciones pequeñas (si lo quieres duplicado a la izquierda) */}
-                    <Link className="navbar-brand d-lg-none" to="/"> 
-                        <img src={logo} alt="logo" style={{ width: "100px" }} />
-                    </Link>
-                    
-                    {/* Carrito a la derecha (Margen automático a la izquierda para empujar) */}
+                {/* DERECHA: Carrito */}
+                <div className="d-flex align-items-center z-10">
                     <MyCart />
                 </div>
+
             </div>
         </nav>
     );
