@@ -103,7 +103,7 @@ const App = () => {
     }
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
-  if (stateShop != undefined && stateShop.is_maintenance) {
+  if ((stateShop != undefined && stateShop.is_maintenance) || MODE === "production") {
     return (
       <div className="min-h-screen w-full bg-brand-cream/30 flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
