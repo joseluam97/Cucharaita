@@ -1,10 +1,10 @@
-// hooks/useTypes.js
+// hooks/useTags.js
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabase";
 
-export const getAllTypes = async () => {
+export const getAllTags = async () => {
     const { data, error } = await supabase
-        .from('Type')
+        .from('Tags')
         .select('*')
           .order('id', { ascending: true });
 
@@ -12,7 +12,7 @@ export const getAllTypes = async () => {
     return data;
 };
 
-const useTypes = ({} = {}) => {
+const useTags = ({} = {}) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +21,7 @@ const useTypes = ({} = {}) => {
     const fetchData = async () => {
       try {
         const { data, error } = await supabase
-          .from('Type')
+          .from('Tags')
           .select('*')
           .order('id', { ascending: true });
 
@@ -42,4 +42,4 @@ const useTypes = ({} = {}) => {
   return { data, loading, setLoading, error };
 };
 
-export default useTypes;
+export default useTags;

@@ -3,6 +3,79 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../supabase";
 import useProductCacheStore from "../store/productCacheStore"; // Importar el store de caché
 
+export const getProductById = async (productId) => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .select(`
+            *,
+            tag ( id, title, color ),
+            type ( id, name )
+        `)
+        .eq('id', productId)
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const fetchAllAdminProducts = async () => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .select(`
+            *,
+            tag ( id, title, color ),
+            type ( id, name )
+        `)
+        .order('id', { ascending: false }); // Los más recientes primero
+
+    if (error) throw error;
+    return data;
+};
+
+export const logicalDeleteProduct = async (id) => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .update({ active: false })
+        .eq('id', id)
+        .select();
+
+    if (error) throw error;
+    return data;
+};
+
+export const updateHasOptionsByProduct = async (id, is_has_option) => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .update({ has_options: is_has_option })
+        .eq('id', id)
+        .select();
+
+    if (error) throw error;
+    return data;
+};
+
+export const createProduct = async (productData) => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .insert(productData)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const updateProduct = async (id, updatedFields) => {
+    const { data, error } = await supabase
+        .from('Productos')
+        .update(updatedFields)
+        .eq('id', id)
+        .select();
+
+    if (error) throw error;
+    return data;
+};
+
 /**
  * Custom Hook para obtener uno o varios productos, utilizando caché en Zustand para la lista completa.
  * @param {object} options - Opciones de la consulta.
@@ -38,7 +111,7 @@ const useProducts = ({ id = null }) => {
                     .from('Productos')
                     .select(`
                         *,
-                        tag ( title, color ),
+                        tag ( id, title, color ),
                         type ( id, name ) 
                     `);
 

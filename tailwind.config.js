@@ -14,6 +14,8 @@ module.exports = {
         'brand-dark': '#2b2b2b',       // Textos oscuros
         'brand-white': '#ffffff',
         'brand-black': '#000000',
+        'brand-green': '#009c3c',
+        'brand-red': '#ac0000',
       },
       fontFamily: {
         'cooper': ['"Cooper Black"', '"Baloo 2"', 'serif'],
