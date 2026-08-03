@@ -79,7 +79,7 @@ const App = () => {
 
         // En desarrollo mostramos el log para verificar que funciona
         if (MODE_WEB === "development") {
-          console.log("✅ Datos obtenidos (GeoJS):", technicalData);
+          //console.log("✅ Datos obtenidos (GeoJS):", technicalData);
         }
 
         if (MODE_WEB === "production") {
@@ -104,7 +104,7 @@ const App = () => {
     }
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
-  if ((stateShop != undefined && stateShop.is_maintenance) || MODE_WEB === "production") {
+  if (stateShop != undefined && (stateShop.is_maintenance || MODE_WEB == "production")) {
     return (
       <div className="min-h-screen w-full bg-brand-cream/30 flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
