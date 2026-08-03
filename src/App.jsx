@@ -19,6 +19,17 @@ import OpinionsList from "./components/OpinionsList";
 import useStateShop from "./hooks/useStateShop";
 import useLogAccess from "./hooks/useAccess";
 
+import FloatingCart from "./components/FloatingCart";
+import Login from "./components/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./components/AdminLayout";
+import OrdersScreen from "./components/admin/OrdersScreen";
+import ProductsScreen from "./components/admin/ProductsScreen";
+import ProductDetailAdmin from "./components/admin/ProductDetailAdmin";
+import OptionProductScreen from "./components/admin/OptionProductScreen";
+import OptionProductDetailAdmin from "./components/admin/OptionProductDetailAdmin";
+import OptionsScreen from './components/admin/OptionsScreen'
+
 const App = () => {
   const { cart } = useCartStore();
   const { getTotalProducts } = useTotalStore();
@@ -92,50 +103,7 @@ const App = () => {
     }
   }, [cart, getTotalProducts, toggleBalanceo, toggleOffcanvas]);
 
-  return (
-    <div className="min-h-screen w-full bg-brand-cream/30 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-primary rounded-full blur-3xl opacity-10 animate-pulse"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-brand-accent rounded-full blur-3xl opacity-20"></div>
-
-      <div className="relative z-10 flex flex-col items-center text-center bg-brand-white p-10 md:p-16 rounded-[3rem] shadow-2xl border-4 border-brand-white max-w-2xl w-full">
-
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-brand-accent/20 text-brand-primary font-bold text-sm mb-6 border border-brand-accent">
-          <span className="text-xl">👩‍🍳</span>
-          <span>Obrador cerrado temporalmente</span>
-        </div>
-        <br />
-
-        <div className="w-full max-w-[350px] md:max-w-[400px] mx-auto mb-8 flex justify-center items-center">
-          <img
-            src={logo}
-            alt="Cucharaita Logo"
-            className="w-full max-w-full h-auto object-contain drop-shadow-md"
-          />
-        </div>
-        <br />
-
-        <h1 className="font-cooper text-brand-dark text-4xl md:text-5xl leading-tight mb-6">
-          Estamos trabajando en algo increíble.
-        </h1>
-
-        <p className="text-gray-600 text-lg md:text-xl font-sans mb-10 max-w-lg leading-relaxed">
-          <br />
-          Nuestra web se está actualizando para ofrecerte una experiencia aún más dulce. <br />
-          Volvemos despues de verano.
-        </p>
-
-        <div className="flex space-x-2 justify-center items-center">
-          <div className="w-3 h-3 bg-brand-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-3 h-3 bg-brand-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-3 h-3 bg-brand-light rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-        </div>
-
-      </div>
-    </div>
-  );
-
-  /*if (stateShop != undefined && stateShop.is_maintenance) {
+  if (stateShop != undefined && stateShop.is_maintenance) {
     return (
       <div className="min-h-screen w-full bg-brand-cream/30 flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
@@ -190,13 +158,39 @@ const App = () => {
             <Route path="/opinions/:code" element={<Opinions />} />
             <Route path="/opiniones" element={<OpinionsList />} />
             <Route path="*" element={<div className="container mt-5 text-center"><h1>404</h1></div>} />
+
+            <Route path="/login-admin" element={<Login />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route path="/administration" element={<AdminLayout />}>
+                {/* RUTAS DE PRODUCTOS */}
+                <Route path="productos" element={<ProductsScreen />} />
+                <Route path="productos/:id" element={<ProductDetailAdmin />} />
+                <Route path="productos/:id/edit" element={<ProductDetailAdmin />} />
+
+                {/* RUTAS DE OPCIONES DE GRUPOS */}
+                <Route path="option-group" element={<OptionProductScreen />} />
+                <Route path="option-group/:id" element={<OptionProductDetailAdmin />} />
+                <Route path="option-group/:id/edit" element={<OptionProductDetailAdmin />} />
+                
+                {/* RUTAS DE OPCIONES */}
+                <Route path="option" element={<OptionsScreen />} />
+
+                {/* RUTAS DE PEDIDOS */}
+                <Route path="pedidos" element={<OrdersScreen />} />
+              </Route>
+            </Route>
+
           </Routes>
-        </main>
+        </main >
+
+        <FloatingCart />
+
         {isVisible && <SidebarOffCanvas />}
         <Footer />
       </>
     );
-  }*/
+  }
 
 
 };
