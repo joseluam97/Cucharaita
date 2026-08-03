@@ -29,6 +29,7 @@ import ProductDetailAdmin from "./components/admin/ProductDetailAdmin";
 import OptionProductScreen from "./components/admin/OptionProductScreen";
 import OptionProductDetailAdmin from "./components/admin/OptionProductDetailAdmin";
 import OptionsScreen from './components/admin/OptionsScreen'
+import OrdersDetailAdmin from "./components/admin/OrdersDetailAdmin";
 
 const App = () => {
   const { cart } = useCartStore();
@@ -173,11 +174,14 @@ const App = () => {
                 <Route path="option-group/:id" element={<OptionProductDetailAdmin />} />
                 <Route path="option-group/:id/edit" element={<OptionProductDetailAdmin />} />
                 
+                {/* RUTAS DE OPCIONES DE PEDIDOS */}
+                <Route path="orders" element={<OrdersScreen />} />
+                <Route path="orders/:id" element={<OrdersDetailAdmin />} />
+                <Route path="orders/:id/edit" element={<OrdersDetailAdmin />} />
+                
                 {/* RUTAS DE OPCIONES */}
                 <Route path="option" element={<OptionsScreen />} />
 
-                {/* RUTAS DE PEDIDOS */}
-                <Route path="pedidos" element={<OrdersScreen />} />
               </Route>
             </Route>
 

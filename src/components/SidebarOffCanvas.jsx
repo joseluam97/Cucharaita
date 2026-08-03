@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { FaWhatsapp, FaCalendarAlt, FaMapMarkerAlt, FaUser } from "react-icons/fa";
+import { FaCalendarAlt, FaMapMarkerAlt, FaUser, FaEnvelope, FaPhone, FaCheckCircle } from "react-icons/fa";
 
 // --- IMPORTACIONES DEL CALENDARIO Y EL IDIOMA ---
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -12,17 +12,13 @@ import useOffcanvasStore from "../store/offcanvasStore";
 import fetchDiscount from "../hooks/useDisconts";
 import useBlockedDays from "../hooks/useBlockedDays";
 
-import emailjs from '@emailjs/browser';
+// Importamos las nuevas funciones desde tu hook centralizado
+import { createOrder, createOrderProduct, createOrderOptionsBatch } from "../hooks/useOrders";
 
 registerLocale("es", es);
 
 const SidebarOffCanvas = () => {
-
-  const SERVICE_ID_EMAIL = import.meta.env.VITE_SUPABASE_SERVICE_ID_EMAIL;
-  const TEMPLATE_ID_EMAIL = import.meta.env.VITE_SUPABASE_TEMPLATE_ID_EMAIL;
-  const PUBLIC_KEY_EMAIL = import.meta.env.VITE_SUPABASE_PUBLIC_KEY_EMAIL;
-
-  const { cart, removeFromCart } = useCartStore();
+  const { cart, removeFromCart, clearCart } = useCartStore();
   const { isVisible, toggleOffcanvas } = useOffcanvasStore();
 
   const [couponCode, setCouponCode] = useState("");
@@ -32,11 +28,16 @@ const SidebarOffCanvas = () => {
   const { data: listBlockDays } = useBlockedDays({});
 
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  
   const [customerData, setCustomerData] = useState({
     name: "",
+    email: "",
+    phone: "",
     date: "",
     address: ""
   });
+  
   const [dateWarning, setDateWarning] = useState(null);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ const SidebarOffCanvas = () => {
     if (diffDays < 3) {
       setDateWarning("⚠️ Para pedidos con menos de 3 días de antelación, NO se garantiza la entrega inmediata. Consultaremos disponibilidad al recibir tu pedido.");
     } else {
-      setDateWarning("✅ Fecha anotada. Te confirmaremos la disponibilidad por WhatsApp.");
+      setDateWarning("✅ Fecha anotada. Te confirmaremos la disponibilidad.");
     }
   };
 
@@ -111,7 +112,7 @@ const SidebarOffCanvas = () => {
       }
       if (Number(subtotal) < Number(coupon.min_amount)) {
         setDiscountAmount(0);
-        setCouponMessage("❌ Este cupón requiere un pedido de minimo " + coupon.min_amount + "€.");
+        setCouponMessage(`❌ Este cupón requiere un pedido de minimo ${coupon.min_amount}€.`);
         setLoadingDiscount(false);
         return;
       }
@@ -130,12 +131,13 @@ const SidebarOffCanvas = () => {
   const groupProductOptions = (optionsObj) => {
     const grouped = {};
     if (!optionsObj) return grouped;
-    Object.values(optionsObj).forEach((val) => {
+    
+    Object.entries(optionsObj).forEach(([groupName, val]) => {
       const optionsArray = Array.isArray(val) ? val : [val];
       optionsArray.forEach(opt => {
         if (!opt) return;
         if (!grouped[opt.name]) {
-          grouped[opt.name] = { count: 0, add_price: opt.add_price || 0 };
+          grouped[opt.name] = { count: 0, add_price: opt.add_price || 0, group: groupName };
         }
         grouped[opt.name].count += 1;
       });
@@ -143,87 +145,73 @@ const SidebarOffCanvas = () => {
     return grouped;
   };
 
-  const handleConfirmOrder = (e) => {
+  const handleConfirmOrder = async (e) => {
     e.preventDefault(); 
+    setIsSubmittingOrder(true);
     const total = calculateTotal();
 
-    let emailOrderDetails = "";
-    cart.forEach((product) => {
-      emailOrderDetails += `\n- ${product.name} x${product.quantity} (${(product.price * product.quantity).toFixed(2)}€)`;
-      const grouped = groupProductOptions(product.options);
-      Object.entries(grouped).forEach(([name, data]) => {
-        emailOrderDetails += `\n   └ ${data.count > 1 ? `${data.count}x ` : ""}${name}`;
+    try {
+      // 1. Crear el Pedido Principal (Orders) usando el hook
+      const orderData = await createOrder({
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        delivery_place: customerData.address,
+        delivery_date: customerData.date,
+        amount: total,
+        amount_paid: 0,
+        order_status: "CREADO"
       });
-    });
 
-    if (discountAmount > 0) {
-      emailOrderDetails += `\n\nDescuento aplicado: -${discountAmount.toFixed(2)} €`;
+      const orderId = orderData.id;
+
+      // 2. Iterar sobre el carrito para crear los productos y sus Opciones
+      for (const product of cart) {
+        for (let i = 0; i < product.quantity; i++) {
+          
+          // 2.1 Insertar el producto usando el hook
+          const productData = await createOrderProduct({
+            order: orderId,
+            name: product.name,
+            price: product.price
+          });
+
+          const orderProductId = productData.id;
+
+          // 2.2 Insertar las opciones agrupadas (usando el campo 'units')
+          const groupedOptions = groupProductOptions(product.options);
+          const optionsToInsert = Object.entries(groupedOptions).map(([optName, data]) => ({
+            product: orderProductId,
+            group: data.group, 
+            option: optName,
+            extra_price: data.add_price,
+            units: data.count 
+          }));
+
+          // 2.3 Inserción masiva de opciones usando el hook
+          if (optionsToInsert.length > 0) {
+            await createOrderOptionsBatch(optionsToInsert);
+          }
+        }
+      }
+
+      alert("✅ ¡Pedido realizado con éxito! Nos pondremos en contacto contigo pronto.");
+      if (clearCart) clearCart(); 
+      setShowCheckoutModal(false);
+      toggleOffcanvas();
+
+    } catch (error) {
+      console.error("Error procesando el pedido:", error);
+      alert("❌ Ocurrió un error al procesar tu pedido. Por favor, inténtalo de nuevo.");
+    } finally {
+      setIsSubmittingOrder(false);
     }
-
-    const templateParams = {
-      customer_name: customerData.name,
-      customer_date: customerData.date,
-      customer_address: customerData.address,
-      order_details: emailOrderDetails,
-      total_price: total.toFixed(2),
-    };
-
-    emailjs.send(
-      SERVICE_ID_EMAIL,
-      TEMPLATE_ID_EMAIL,
-      templateParams,
-      PUBLIC_KEY_EMAIL
-    ).then(
-      (response) => console.log('Email enviado con éxito!', response.status, response.text),
-      (error) => console.error('Error al enviar el email...', error)
-    );
-
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=+34685709031&text=${generateWhatsAppMessage()}`;
-    window.open(whatsappUrl, '_blank');
-    setShowCheckoutModal(false);
   };
 
-  const generateWhatsAppMessage = () => {
-    const total = calculateTotal();
-    const deposit = total * 0.25;
-    const remaining = total * 0.75;
-
-    let message = `Hola Cucharaita, me gustaría realizar el siguiente pedido: \n\n*🛒 RESUMEN DEL PEDIDO:*`;
-
-    cart.forEach((product) => {
-      message += `\n● *${product.name}* x${product.quantity}: *${(product.price * product.quantity).toFixed(2)}€*\n`;
-      const grouped = groupProductOptions(product.options);
-      Object.entries(grouped).forEach(([name, data]) => {
-        const totalOptionPrice = (data.count * data.add_price).toFixed(2);
-        const priceText = data.add_price > 0 ? ` (=${totalOptionPrice} €)` : "";
-        message += `   └ ${data.count > 1 ? `${data.count}x ` : ""}${name}${priceText}\n`;
-      });
-    });
-
-    if (discountAmount > 0) {
-      message += `\n*Descuento aplicado (${couponCode}): -${discountAmount.toFixed(2)} €*`;
-    }
-
-    message += `\n\n*💰 TOTAL A PAGAR: ${total.toFixed(2)} €*`;
-    message += `\n----------------------------------`;
-    message += `\n*👤 DATOS DE ENTREGA:*`;
-    message += `\nNombre: ${customerData.name}`;
-    message += `\nFecha solicitada: ${customerData.date} ${dateWarning && dateWarning.includes("NO se garantiza") ? "(Consultar Disponibilidad)" : ""}`;
-    message += `\nLugar: ${customerData.address}`;
-    message += `\n----------------------------------`;
-    message += `\n*ℹ️ CONDICIONES DE PAGO:*`;
-    message += `\nSe requiere abonar el 25% para confirmar: *${deposit.toFixed(2)} €*`;
-    message += `\nRestante a la entrega: *${remaining.toFixed(2)} €*`;
-
-    return encodeURIComponent(message);
-  };
-
-  // --- UI MEJORADA PARA LAS OPCIONES ---
   const renderGroupedOptionsUI = (productCart) => {
     const grouped = groupProductOptions(productCart.options);
     const options = Object.entries(grouped);
     
-    // Si no hay opciones, no renderizamos nada para no ocupar espacio
     if (options.length === 0) return null;
 
     return (
@@ -242,7 +230,7 @@ const SidebarOffCanvas = () => {
     );
   };
 
-  const isFormValid = customerData.name && customerData.date && customerData.address;
+  const isFormValid = customerData.name && customerData.email && customerData.phone && customerData.date && customerData.address;
 
   const renderCheckoutModal = () => {
     if (!showCheckoutModal) return null;
@@ -257,37 +245,50 @@ const SidebarOffCanvas = () => {
         <div className="bg-white rounded p-4 shadow-lg" style={{ maxWidth: '450px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h5 className="fw-bold mb-0">Confirmar Datos del Pedido</h5>
-            <button className="btn-close" onClick={() => setShowCheckoutModal(false)}></button>
+            <button className="btn-close" onClick={() => setShowCheckoutModal(false)} disabled={isSubmittingOrder}></button>
           </div>
 
           <div className="mb-3">
             <label className="form-label small fw-bold mb-1"><FaUser className="me-1 text-muted" /> Nombre Completo</label>
-            <input type="text" className="form-control form-control-sm" value={customerData.name} onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })} />
+            <input type="text" className="form-control form-control-sm" value={customerData.name} onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })} disabled={isSubmittingOrder} />
+          </div>
+
+          <div className="row">
+            <div className="col-6 mb-3">
+              <label className="form-label small fw-bold mb-1"><FaEnvelope className="me-1 text-muted" /> Email</label>
+              <input type="email" className="form-control form-control-sm" value={customerData.email} onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })} disabled={isSubmittingOrder} />
+            </div>
+            <div className="col-6 mb-3">
+              <label className="form-label small fw-bold mb-1"><FaPhone className="me-1 text-muted" /> Teléfono</label>
+              <input type="tel" className="form-control form-control-sm" value={customerData.phone} onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })} disabled={isSubmittingOrder} />
+            </div>
           </div>
 
           <div className="mb-3 d-flex flex-column">
             <label className="form-label small fw-bold mb-1"><FaCalendarAlt className="me-1 text-muted" /> Fecha de Entrega</label>
-            <DatePicker selected={selectedDateObj} onChange={handleDateChange} minDate={new Date()} excludeDateIntervals={excludedIntervals} dateFormat="dd/MM/yyyy" locale="es" placeholderText="Selecciona una fecha" className="form-control form-control-sm w-100" wrapperClassName="w-100" />
+            <DatePicker selected={selectedDateObj} onChange={handleDateChange} minDate={new Date()} excludeDateIntervals={excludedIntervals} dateFormat="dd/MM/yyyy" locale="es" placeholderText="Selecciona una fecha" className="form-control form-control-sm w-100" wrapperClassName="w-100" disabled={isSubmittingOrder} />
             {dateWarning && <div className={`mt-1 fw-bold ${dateWarning.includes('✅') ? 'text-success' : 'text-warning'}`} style={{ fontSize: '0.7rem' }}>{dateWarning}</div>}
           </div>
 
           <div className="mb-4">
             <label className="form-label small fw-bold mb-1"><FaMapMarkerAlt className="me-1 text-muted" /> Lugar de Entrega</label>
-            <input type="text" className="form-control form-control-sm" value={customerData.address} onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })} />
+            <input type="text" className="form-control form-control-sm" value={customerData.address} onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })} disabled={isSubmittingOrder} />
           </div>
 
           <div className="bg-light p-3 rounded mb-3 border">
             <h6 className="fw-bold border-bottom pb-2 mb-2 small">Resumen de Pago</h6>
             <div className="d-flex justify-content-between small mb-2"><span>Total:</span><span className="fw-bold">{total.toFixed(2)} €</span></div>
-            <div className="mb-2"><div className="d-flex justify-content-between text-primary small align-items-center"><span className="fw-bold">Señal para reservar (25%):</span><span className="fw-bold">{deposit.toFixed(2)} €</span></div><p className="m-0 text-muted fst-italic" style={{ fontSize: '0.75rem' }}>(Se abonará por Bizum/Transferencia tras recibir instrucciones)</p></div>
+            <div className="mb-2"><div className="d-flex justify-content-between text-primary small align-items-center"><span className="fw-bold">Señal para reservar (25%):</span><span className="fw-bold">{deposit.toFixed(2)} €</span></div><p className="m-0 text-muted fst-italic" style={{ fontSize: '0.75rem' }}>(Se abonará tras confirmación)</p></div>
             <div className="d-flex justify-content-between text-muted small pt-2 border-top"><span>Restante a la entrega (75%):</span><span>{remaining.toFixed(2)} €</span></div>
           </div>
 
-          <p className="text-muted x-small text-center mb-3">Se abrirá WhatsApp con el pedido listo para enviar.</p>
-
           <div className="d-grid gap-2">
-            <button type="button" className={`btn btn-success fw-bold py-2 ${!isFormValid ? 'disabled' : ''}`} onClick={handleConfirmOrder} disabled={!isFormValid}>
-              <FaWhatsapp className="me-2" size={20} /> ENVIAR PEDIDO
+            <button type="button" className={`btn btn-success fw-bold py-2 ${!isFormValid || isSubmittingOrder ? 'disabled' : ''}`} onClick={handleConfirmOrder} disabled={!isFormValid || isSubmittingOrder}>
+              {isSubmittingOrder ? (
+                <span>Procesando...</span>
+              ) : (
+                <><FaCheckCircle className="me-2" size={18} /> PROCESAR PEDIDO</>
+              )}
             </button>
           </div>
         </div>
@@ -308,45 +309,21 @@ const SidebarOffCanvas = () => {
             <p className="text-center mt-5">Tu carrito está vacío.</p>
           ) : (
             cart.map((product, index) => (
-              /* --- AQUÍ ESTÁ EL CAMBIO PRINCIPAL EN EL DISEÑO DE CADA ITEM --- */
               <div className="d-flex align-items-start gap-3 mb-3 pb-3 border-bottom" key={`${product.id}-${index}`}>
-                
-                {/* 1. CONTENEDOR DE IMAGEN FIJO: Esto asegura que todas las imágenes midan lo mismo */}
                 <div style={{ width: "70px", height: "70px", flexShrink: 0 }}>
-                    <img
-                        src={product.image}
-                        className="img-fluid rounded border"
-                        alt={product.name}
-                        // 'object-fit: cover' recorta la imagen para llenar el cuadrado sin deformarla
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                    />
+                    <img src={product.image} className="img-fluid rounded border" alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
-
-                {/* 2. CONTENIDO DEL PRODUCTO: Usamos flex-grow para que ocupe el resto */}
                 <div className="flex-grow-1">
-                    {/* Fila superior: Nombre y Precio Total */}
                     <div className="d-flex justify-content-between align-items-start">
-                        <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>
-                            {product.name}
-                        </h6>
-                        <span className="fw-bold text-nowrap ms-2">
-                            {(product.price * product.quantity).toFixed(2)}€
-                        </span>
+                        <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>{product.name}</h6>
+                        <span className="fw-bold text-nowrap ms-2">{(product.price * product.quantity).toFixed(2)}€</span>
                     </div>
-
-                    {/* Fila inferior: Cantidad, Opciones y Botón eliminar */}
                     <div className="d-flex justify-content-between align-items-end mt-1">
                         <div>
                              <small className="text-muted fw-bold" style={{fontSize: '0.8rem'}}>Cant: {product.quantity}</small>
-                             {/* Renderizado de opciones mejorado */}
                              {renderGroupedOptionsUI(product)}
                         </div>
-
-                        <button 
-                            className="btn btn-link text-danger p-0 border-0" 
-                            onClick={() => removeFromCart(product.cartItemId)}
-                            title="Eliminar producto"
-                        >
+                        <button className="btn btn-link text-danger p-0 border-0" onClick={() => removeFromCart(product.cartItemId)} title="Eliminar producto">
                             <RiDeleteBin6Line size={18} />
                         </button>
                     </div>

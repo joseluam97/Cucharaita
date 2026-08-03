@@ -13,7 +13,7 @@ const AdminLayout = () => {
     { name: "Productos", path: "/administration/productos", icon: "🍪" },
     { name: "Grupos", path: "/administration/option-group", icon: "🧩" },
     { name: "Opciones", path: "/administration/option", icon: "⚙️" },
-    { name: "Pedidos", path: "/administration/pedidos", icon: "📦" },
+    { name: "Pedidos", path: "/administration/orders", icon: "📦" },
     { name: "Tags", path: "/administration/tags", icon: "🏷️" },
     { name: "Tipos", path: "/administration/tipos", icon: "📂" },
     { name: "Descuentos", path: "/administration/descuentos", icon: "🏷️" },
