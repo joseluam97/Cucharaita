@@ -173,7 +173,8 @@ const SidebarOffCanvas = () => {
           const productData = await createOrderProduct({
             order: orderId,
             name: product.name,
-            price: product.price
+            price: product.price,
+            units: product.quantity
           });
 
           const orderProductId = productData.id;

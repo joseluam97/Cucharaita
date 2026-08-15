@@ -108,21 +108,6 @@ const ProductDetail = () => {
         }
     };
 
-    const groupOptionsByGroup = (listOptions) => {
-        if (!listOptions || listOptions.length === 0) return [];
-        const groupedMap = listOptions.reduce((acc, option) => {
-            const groupId = option.group.id;
-            if (!acc.has(groupId)) {
-                acc.set(groupId, { ...option.group, options: [] });
-            }
-            const optionData = { ...option };
-            delete optionData.group;
-            acc.get(groupId).options.push(optionData);
-            return acc;
-        }, new Map());
-        return Array.from(groupedMap.values());
-    };
-
     // 🛑 MODIFICADO: CALCULAR PRECIO TOTAL USANDO LA BASE CORRECTA
     const calculateTotalPrice = useCallback((productData, optionsSelected) => {
         if (!productData) return 0;

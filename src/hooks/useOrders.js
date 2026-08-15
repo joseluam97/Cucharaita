@@ -9,14 +9,13 @@ export const getAllOrders = async () => {
             *,
             Orders_Product ( id )
         `)
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
     if (error) throw error;
     return data;
 };
 
 export const getOrderById = async (orderId) => {
-    // Obtenemos el pedido con todos sus productos y las opciones de cada producto
     const { data, error } = await supabase
         .from('Orders')
         .select(`
@@ -27,12 +26,13 @@ export const getOrderById = async (orderId) => {
             )
         `)
         .eq('id', orderId)
+        .order('id', { foreignTable: 'Orders_Product', ascending: true })
         .single();
 
     if (error) throw error;
+
     return data;
 };
-
 export const updateOrderStatus = async (orderId, newStatus) => {
     const { data, error } = await supabase
         .from('Orders')
@@ -79,6 +79,17 @@ export const createOrderProduct = async (productData) => {
     return data;
 };
 
+export const updateOrderProduct = async (orderProductId, updatedFields) => {
+    const { data, error } = await supabase
+        .from('Orders_Product')
+        .update(updatedFields)
+        .eq('id', orderProductId)
+        .select();
+
+    if (error) throw error;
+    return data;
+};
+
 export const createOrderOptionsBatch = async (optionsDataArray) => {
     const { data, error } = await supabase
         .from('Orders_Options')
@@ -87,4 +98,15 @@ export const createOrderOptionsBatch = async (optionsDataArray) => {
 
     if (error) throw error;
     return data;
+};
+
+export const deleteProductFromOrder = async (id_relation) => {
+  const { data, error } = await supabase
+    .from('Orders_Product')
+    .delete()
+    .eq('id', id_relation);
+
+  if (error) throw error;
+
+  return data;
 };
