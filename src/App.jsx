@@ -79,7 +79,7 @@ const App = () => {
 
         // En desarrollo mostramos el log para verificar que funciona
         if (MODE_WEB === "development") {
-          //console.log("✅ Datos obtenidos (GeoJS):", technicalData);
+          console.log("✅ Datos obtenidos (GeoJS):", technicalData);
         }
 
         if (MODE_WEB === "production") {

@@ -13,7 +13,7 @@ import fetchDiscount from "../hooks/useDisconts";
 import useBlockedDays from "../hooks/useBlockedDays";
 
 // Importamos las nuevas funciones desde tu hook centralizado
-import { createOrder, createOrderProduct, createOrderOptionsBatch } from "../hooks/useOrders";
+import { createOrder, createOrderProduct, createOrderOption } from "../hooks/useOrders";
 
 registerLocale("es", es);
 
@@ -29,7 +29,7 @@ const SidebarOffCanvas = () => {
 
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  
+
   const [customerData, setCustomerData] = useState({
     name: "",
     email: "",
@@ -37,7 +37,7 @@ const SidebarOffCanvas = () => {
     date: "",
     address: ""
   });
-  
+
   const [dateWarning, setDateWarning] = useState(null);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ const SidebarOffCanvas = () => {
   const groupProductOptions = (optionsObj) => {
     const grouped = {};
     if (!optionsObj) return grouped;
-    
+
     Object.entries(optionsObj).forEach(([groupName, val]) => {
       const optionsArray = Array.isArray(val) ? val : [val];
       optionsArray.forEach(opt => {
@@ -146,7 +146,7 @@ const SidebarOffCanvas = () => {
   };
 
   const handleConfirmOrder = async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setIsSubmittingOrder(true);
     const total = calculateTotal();
 
@@ -167,37 +167,35 @@ const SidebarOffCanvas = () => {
 
       // 2. Iterar sobre el carrito para crear los productos y sus Opciones
       for (const product of cart) {
-        for (let i = 0; i < product.quantity; i++) {
-          
-          // 2.1 Insertar el producto usando el hook
-          const productData = await createOrderProduct({
-            order: orderId,
-            name: product.name,
-            price: product.price,
-            units: product.quantity
-          });
+        // 2.1 Insertar el producto usando el hook
+        const productData = await createOrderProduct({
+          order: orderId,
+          name: product.name,
+          price: product.price,
+          units: product.quantity,
+          product_link: product.id
+        });
 
-          const orderProductId = productData.id;
+        const orderProductId = productData.id;
 
-          // 2.2 Insertar las opciones agrupadas (usando el campo 'units')
-          const groupedOptions = groupProductOptions(product.options);
-          const optionsToInsert = Object.entries(groupedOptions).map(([optName, data]) => ({
-            product: orderProductId,
-            group: data.group, 
-            option: optName,
-            extra_price: data.add_price,
-            units: data.count 
-          }));
+        // 2.2 Insertar las opciones agrupadas (usando el campo 'units')
+        const groupedOptions = groupProductOptions(product.options);
+        const optionsToInsert = Object.entries(groupedOptions).map(([optName, data]) => ({
+          product: orderProductId,
+          group: data.group,
+          option: optName,
+          extra_price: data.add_price,
+          units: data.count
+        }));
 
-          // 2.3 Inserción masiva de opciones usando el hook
-          if (optionsToInsert.length > 0) {
-            await createOrderOptionsBatch(optionsToInsert);
-          }
+        // 2.3 Inserción masiva de opciones usando el hook
+        if (optionsToInsert.length > 0) {
+          await createOrderOption(optionsToInsert);
         }
       }
 
       alert("✅ ¡Pedido realizado con éxito! Nos pondremos en contacto contigo pronto.");
-      if (clearCart) clearCart(); 
+      if (clearCart) clearCart();
       setShowCheckoutModal(false);
       toggleOffcanvas();
 
@@ -212,20 +210,20 @@ const SidebarOffCanvas = () => {
   const renderGroupedOptionsUI = (productCart) => {
     const grouped = groupProductOptions(productCart.options);
     const options = Object.entries(grouped);
-    
+
     if (options.length === 0) return null;
 
     return (
       <div className="mt-1 ps-2 border-start border-2">
         {options.map(([name, data], index) => {
-            const totalOptionPrice = (data.count * data.add_price).toFixed(2);
-            return (
-                <div className="text-muted small lh-sm" key={`${productCart.id}-${index}`} style={{ fontSize: '0.75rem' }}>
-                    {data.count > 1 && <span className="fw-bold text-dark">{data.count}x </span>}
-                    {name}
-                    {data.add_price > 0 && <span className="ms-1">(= {totalOptionPrice} €)</span>}
-                </div>
-            );
+          const totalOptionPrice = (data.count * data.add_price).toFixed(2);
+          return (
+            <div className="text-muted small lh-sm" key={`${productCart.id}-${index}`} style={{ fontSize: '0.75rem' }}>
+              {data.count > 1 && <span className="fw-bold text-dark">{data.count}x </span>}
+              {name}
+              {data.add_price > 0 && <span className="ms-1">(+{totalOptionPrice} €)</span>}
+            </div>
+          );
         })}
       </div>
     );
@@ -312,22 +310,22 @@ const SidebarOffCanvas = () => {
             cart.map((product, index) => (
               <div className="d-flex align-items-start gap-3 mb-3 pb-3 border-bottom" key={`${product.id}-${index}`}>
                 <div style={{ width: "70px", height: "70px", flexShrink: 0 }}>
-                    <img src={product.image} className="img-fluid rounded border" alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={product.image} className="img-fluid rounded border" alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div className="flex-grow-1">
-                    <div className="d-flex justify-content-between align-items-start">
-                        <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>{product.name}</h6>
-                        <span className="fw-bold text-nowrap ms-2">{(product.price * product.quantity).toFixed(2)}€</span>
+                  <div className="d-flex justify-content-between align-items-start">
+                    <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>{product.name}</h6>
+                    <span className="fw-bold text-nowrap ms-2">{(product.price * product.quantity).toFixed(2)}€</span>
+                  </div>
+                  <div className="d-flex justify-content-between align-items-end mt-1">
+                    <div>
+                      <small className="text-muted fw-bold" style={{ fontSize: '0.8rem' }}>Cant: {product.quantity}</small>
+                      {renderGroupedOptionsUI(product)}
                     </div>
-                    <div className="d-flex justify-content-between align-items-end mt-1">
-                        <div>
-                             <small className="text-muted fw-bold" style={{fontSize: '0.8rem'}}>Cant: {product.quantity}</small>
-                             {renderGroupedOptionsUI(product)}
-                        </div>
-                        <button className="btn btn-link text-danger p-0 border-0" onClick={() => removeFromCart(product.cartItemId)} title="Eliminar producto">
-                            <RiDeleteBin6Line size={18} />
-                        </button>
-                    </div>
+                    <button className="btn btn-link text-danger p-0 border-0" onClick={() => removeFromCart(product.cartItemId)} title="Eliminar producto">
+                      <RiDeleteBin6Line size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

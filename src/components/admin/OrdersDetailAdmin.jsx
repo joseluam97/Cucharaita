@@ -4,14 +4,13 @@ import { BsArrowLeft, BsSave, BsPerson, BsBoxSeam, BsListCheck, BsTrash, BsPenci
 import { IoMdAdd } from "react-icons/io";
 import { FiMinus } from "react-icons/fi";
 import { FaEdit } from "react-icons/fa";
-import { getOrderById, updateOrderDetails } from "../../hooks/useOrders";
+import { getOrderById, updateOrderDetails, createOrderOption, deleteOptionsProductByProduct, createOrderProduct, updateOrderProduct, deleteProductFromOrder } from "../../hooks/useOrders";
 import { InputField, LabelTitle } from "./CommonField";
 import { fetchAllAdminProducts } from "../../hooks/useProducts";
 import { getProductGroupByProduct } from "../../hooks/useGroups";
 import { getGroupOptionsByGroup } from "../../hooks/useOptions";
-import { createOrderProduct } from "../../hooks/useOrders";
-import { updateOrderProduct } from "../../hooks/useOrders";
-import { deleteProductFromOrder } from "../../hooks/useOrders";
+import OptionsProductSelect from "../OptionsProductSelect";
+import { getGroupById } from "../../hooks/useGroups";
 
 const ORDER_STATUSES = [
   "CREADO", "REVISADO", "PENDIENTE DE RECIBIR PRIMER PAGO",
@@ -29,6 +28,7 @@ const OrdersDetailAdmin = () => {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [productDuplicated, setProductDuplicated] = useState(false);
 
   const [listProducts, setListProducts] = useState({});
 
@@ -40,6 +40,10 @@ const OrdersDetailAdmin = () => {
     product_data: undefined,
     list_options: {}
   });
+
+  const [selectedGroupOptions, setSelectedGroupOptions] = useState({});
+  const [canAddToCart, setCanAddToCart] = useState(false);
+  const [precioWithAdd, setPrecioWithAdd] = useState(0);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -110,24 +114,41 @@ const OrdersDetailAdmin = () => {
       return;
     }
 
-    let finalAddPriceOrder = 0;
+    const finalAddPriceOrder = Number(precioWithAdd * productData.units_product);
+
     const newProductOrder = await createOrderProduct({
       order: id,
       name: productData.product_data.name,
-      price: productData.product_data.price,
+      price: finalAddPriceOrder,
       units: productData.units_product,
+      product_link: productData.id
     });
-
-    finalAddPriceOrder = productData.product_data.price;
 
     if (productData.list_options && productData.list_options.length > 0) {
       // Add the options to the product
-      // If the price is greater than 0, add it to the finalAddPriceOrder
-      finalAddPriceOrder = finalAddPriceOrder + 0;
+      let idOrderProduct = newProductOrder.id;
+
+      for (const [key, items] of Object.entries(selectedGroupOptions)) {
+
+        const id_group = key;
+        const group = items;
+        const group_data = await getGroupById(id_group);
+        const groupOptions = groupOptionsDuplicated(group);
+
+        for (const optionGroup of groupOptions) {
+          await createOrderOption({
+            product: idOrderProduct,
+            group: group_data.name,
+            option: optionGroup.name,
+            extra_price: optionGroup.add_price,
+            units: optionGroup.units,
+          });
+        }
+      }
     }
 
     // add price to ammount
-    const newAmount = formData.amount - orderProduct.price * orderProduct.units;
+    const newAmount = formData.amount + finalAddPriceOrder;
     setFormData((prev) => ({
       ...prev,
       amount: newAmount
@@ -137,11 +158,51 @@ const OrdersDetailAdmin = () => {
     // Reload the order data
     const updatedOrder = await getOrderById(id);
     setOrderData(updatedOrder);
+
+    // Close form and reset
+    setProductData({
+      product_id: "",
+      units_product: 1,
+      product_data: undefined,
+      list_options: {}
+    });
+
+    setCanAddToCart(false);
+    setFormProductGroupInEditMode(false);
+    setFormProductChangeVisible(false);
+  }
+
+  const groupOptionsDuplicated = (optionData) => {
+    // 1. Control de seguridad por si llega nulo o indefinido
+    if (!optionData) return [];
+
+    // 2. Normalizamos los datos: si no es array, lo convertimos en un array de 1 elemento
+    const dataArray = Array.isArray(optionData) ? optionData : [optionData];
+
+    // 3. Aplicamos el reduce (ahora siempre funcionará porque dataArray siempre es un array)
+    const groupedItems = dataArray.reduce((acc, current) => {
+      if (acc[current.id]) {
+        // Si ya existe, sumamos 1 a units
+        acc[current.id].units += 1;
+      } else {
+        // Si no existe, lo inicializamos omitiendo tempId y añadiendo units: 1
+        acc[current.id] = {
+          id: current.id,
+          name: current.name,
+          add_price: current.add_price,
+          units: 1
+        };
+      }
+      return acc;
+    }, {});
+
+    return Object.values(groupedItems);
   }
 
   const deleteProductCart = async (orderProduct) => {
-    console.log("orderProduct");
-    console.log(orderProduct);
+
+    // Delete order options by product
+    await deleteOptionsProductByProduct(orderProduct.id);
 
     // reduce price to ammount
     const newAmount = formData.amount - orderProduct.price * orderProduct.units;
@@ -160,13 +221,28 @@ const OrdersDetailAdmin = () => {
 
   }
 
-  const handleProductOptionChange = (e) => {
+  const changeUnitsProducts = (e) => {
+    const { name, value } = e.target;
+    setProductData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const changeProductOption = (e) => {
     const { name, value } = e.target;
     setProductData((prev) => ({ ...prev, [name]: value }));
 
     // Get the selected product from listProducts based on the selected value
     let selectedProduct = listProducts.find(p => p.id == value);
     if (selectedProduct) {
+      // Check if product is created
+      let result_search = orderData.Orders_Product?.find(element => element?.product_link == selectedProduct.id);
+
+      if (result_search != undefined) {
+        setProductDuplicated(true);
+      }
+      else {
+        setProductDuplicated(false);
+      }
+
       setProductData((prev) => ({
         ...prev,
         product_data: selectedProduct
@@ -208,6 +284,21 @@ const OrdersDetailAdmin = () => {
           ...prev,
           list_options: all_options
         }));
+
+        if (all_options.length == 0) {
+          setCanAddToCart(true);
+          setPrecioWithAdd(product.price);
+          if (product.offer_price && Number(product.offer_price) > 0) {
+            setPrecioWithAdd(product.offer_price);
+          }
+          setPrecioWithAdd(product.price);
+
+          setSelectedGroupOptions({});
+        }
+        else {
+          setCanAddToCart(false);
+          setSelectedGroupOptions({});
+        }
 
       } catch (error) {
         console.error("Error al cargar las opciones:", error);
@@ -328,7 +419,7 @@ const OrdersDetailAdmin = () => {
                   <select
                     name="product_id"
                     value={productData.product_id}
-                    onChange={handleProductOptionChange}
+                    onChange={changeProductOption}
                     className="flex-1 items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 transition-all cursor-pointer"
                     disabled={formProductGroupInEditMode}
                   >
@@ -336,54 +427,71 @@ const OrdersDetailAdmin = () => {
                     {/* Mapeo del catálogo de opciones */}
                     {listProducts?.map((opt) => (
                       <option key={opt.id} value={opt.id}>
-                        {opt.name}
+                        {opt.name + ` (${opt.price} €)`}
                       </option>
                     ))}
                   </select>
                 </div>
-                {productData.product_data && productData.product_data === 0 && (
-                  <span className="fw-bold text-primary small">Este producto no tiene opciones que seleccionar</span>
-                )}
 
                 <InputField
                   label="Unidades"
                   name="units_product"
                   type="number"
                   value={productData.units_product}
-                  onChange={handleProductOptionChange}
+                  onChange={changeUnitsProducts}
                 />
 
-                {/*<InputField
-                  type="number"
-                  name="add_price"
-                  placeholder="Precio extra (€)"
-                  value={newOptionData.add_price}
-                  onChange={handleNewOptionChange}
-                  step="1"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all text-sm text-slate-800 w-full"
-                />*/}
+                {productDuplicated == false && productData.list_options && productData.list_options.length === 0 && (
+                  <span className="fw-bold text-primary small">Este producto no tiene opciones que seleccionar</span>
+                )}
+
+                {productDuplicated == true && productData.list_options && productData.list_options.length === 0 && (
+                  <span className="fw-bold text-brand-red small">Este producto ya existe en el pedido, si quieres añadir unidades puedes hacerlo directamente sobre el producto ya existente.</span>
+                )}
+
+                {productDuplicated == true && productData.list_options && productData.list_options.length > 0 && (
+                  <span className="fw-bold text-brand-red small">Este producto ya esta registrado en el pedido, en caso de querer mantener las mismas opciones que el ya existente puedes añadir unidades directamente sobre el producto ya existente.</span>
+                )}
+
+                {productData.list_options && productData.list_options.length > 0 && (
+                  <OptionsProductSelect
+                    productId={productData.product_id}
+                    quantity={productData.units_product}
+                    selectedGroupOptions={selectedGroupOptions}
+                    setSelectedGroupOptions={setSelectedGroupOptions}
+                    setPrecioWithAdd={setPrecioWithAdd}
+                    setCanAddToCart={setCanAddToCart}
+                  />
+                )}
               </div>
             )}
 
-            <div className="flex items-center justify-between w-full">
-              <button
-                type="button"
-                onClick={addNewProduct}
-                className="flex-1 bg-brand-primary text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-brand-secondary transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {formProductChangeVisible ? "Añadir" : "Añadir Nuevo Producto"}
-              </button>
-              {formProductChangeVisible && (
+
+            {isEditMode && (
+              <div className="flex items-center justify-between w-full">
                 <button
                   type="button"
-                  onClick={() => { setFormProductChangeVisible(false) }}
-                  className="flex-1 bg-brand-red text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-brand-secondary transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={addNewProduct}
+                  className="flex-1 bg-brand-primary text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-brand-secondary transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!canAddToCart && formProductChangeVisible}
                 >
-                  Cancelar
+                  {formProductChangeVisible ?
+                    `Añadir al pedido (${Number(precioWithAdd * productData.units_product).toFixed(2)} €)`
+                    :
+                    "Añadir Nuevo Producto"
+                  }
                 </button>
-              )}
-            </div>
-
+                {formProductChangeVisible && (
+                  <button
+                    type="button"
+                    onClick={() => { setFormProductChangeVisible(false) }}
+                    className="flex-1 bg-brand-red text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-brand-secondary transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               {orderData.Orders_Product?.map((product) => (
                 <div key={product.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-2">
@@ -414,16 +522,6 @@ const OrdersDetailAdmin = () => {
                         </>
                       )}
 
-                      {product.Orders_Options && product.Orders_Options.length > 0 && (
-                        <button
-                          onClick={() => { editProductFromOrder(product.id) }}
-                          className="items-center justify-end w-10 h-10 border-none bg-transparent hover:bg-slate-100 text-slate-600 rounded-xl transition-colors"
-                          title="Editar"
-                        >
-                          <BsPencil size={16} />
-                        </button>
-                      )}
-
                       <button
                         onClick={() => { deleteProductCart(product) }}
                         className="items-center justify-end w-10 h-10 border-none bg-transparent hover:bg-slate-100 text-slate-600 rounded-xl transition-colors"
@@ -436,13 +534,35 @@ const OrdersDetailAdmin = () => {
 
                   {/* Opciones del producto */}
                   {product.Orders_Options && product.Orders_Options.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
-                      {product.Orders_Options.map((opt, index) => (
-                        <span key={opt.id} className="text-[10px] px-2 py-1 rounded-md bg-white border border-slate-200 text-slate-600 shadow-sm flex items-center gap-1">
-                          <b className="text-slate-400">{index + 1}:</b> {opt.option}
-                          ({opt.units} uds)
-                          {opt.extra_price > 0 && <span className="text-green-600 font-bold ml-1">+{opt.extra_price}€</span>}
-                        </span>
+                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-col gap-3">
+                      {/* Agrupamos las opciones por la propiedad 'group' */}
+                      {Object.entries(
+                        product.Orders_Options.reduce((acc, opt) => {
+                          if (!acc[opt.group]) acc[opt.group] = [];
+                          acc[opt.group].push(opt);
+                          return acc;
+                        }, {})
+                      ).map(([groupName, options]) => (
+                        <div key={groupName} className="flex flex-col gap-1.5">
+                          {/* Título del grupo */}
+                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                            {groupName}
+                          </span>
+
+                          {/* Opciones del grupo */}
+                          <div className="flex flex-wrap gap-2">
+                            {options.map((opt, index) => (
+                              <span key={opt.id} className="text-[10px] px-2 py-1 rounded-md bg-white border border-slate-200 text-slate-600 shadow-sm flex items-center gap-1">
+                                {/* El índice ahora se reinicia por cada grupo */}
+                                <b className="text-slate-400">{index + 1}:</b> {opt.option}
+                                <span className="text-slate-500">({opt.units} uds)</span>
+                                {opt.extra_price > 0 && (
+                                  <span className="text-green-600 font-bold ml-1">+{opt.extra_price}€</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}

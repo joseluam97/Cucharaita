@@ -90,7 +90,7 @@ export const updateOrderProduct = async (orderProductId, updatedFields) => {
     return data;
 };
 
-export const createOrderOptionsBatch = async (optionsDataArray) => {
+export const createOrderOption = async (optionsDataArray) => {
     const { data, error } = await supabase
         .from('Orders_Options')
         .insert(optionsDataArray)
@@ -105,6 +105,17 @@ export const deleteProductFromOrder = async (id_relation) => {
     .from('Orders_Product')
     .delete()
     .eq('id', id_relation);
+
+  if (error) throw error;
+
+  return data;
+};
+
+export const deleteOptionsProductByProduct = async (id_product) => {
+  const { data, error } = await supabase
+    .from('Orders_Options')
+    .delete()
+    .eq('product', id_product);
 
   if (error) throw error;
 

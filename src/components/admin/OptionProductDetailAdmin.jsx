@@ -74,11 +74,9 @@ const OptionProductDetailAdmin = () => {
     };
 
     if (id && !isCreationMode) {
-      console.log("Cargando datos del grupo con ID:", id);
       fetchInitialData();
     }
     else {
-      console.log("Modo de creación de grupo, no se cargan datos existentes.");
       setLoading(false);
     }
   }, [id]);
