@@ -7,7 +7,7 @@ import useTotalStore from "../store/totalProductStore";
 const FloatingCart = () => {
   const location = useLocation();
 
-  const { toggleOffcanvas } = useOffcanvasStore();
+  const { isVisible, toggleOffcanvas } = useOffcanvasStore();
   const { cart } = useCartStore();
   const { getTotalProducts } = useTotalStore();
   const totalProducts = getTotalProducts(cart);
@@ -17,6 +17,8 @@ const FloatingCart = () => {
   if (isSectionAdmin) {
     return null;
   }
+
+  if (isVisible) return null;
 
   return (
     <button
