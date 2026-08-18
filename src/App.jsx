@@ -30,6 +30,7 @@ import OptionProductScreen from "./components/admin/OptionProductScreen";
 import OptionProductDetailAdmin from "./components/admin/OptionProductDetailAdmin";
 import OptionsScreen from './components/admin/OptionsScreen'
 import OrdersDetailAdmin from "./components/admin/OrdersDetailAdmin";
+import Tienda from "./components/Tienda";
 
 const App = () => {
   const { cart } = useCartStore();
@@ -154,6 +155,7 @@ const App = () => {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/tienda" element={<Tienda />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/opinions/" element={<Opinions />} />
             <Route path="/opinions/:code" element={<Opinions />} />
