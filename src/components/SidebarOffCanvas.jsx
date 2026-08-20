@@ -193,15 +193,22 @@ const SidebarOffCanvas = () => {
           await createOrderOption(optionsToInsert);
         }
       }
-
-      alert("✅ ¡Pedido realizado con éxito! Nos pondremos en contacto contigo pronto.");
+      addAlert({
+        title: "¡Pedido realizado con éxito!",
+        subtitle: "Nos pondremos en contacto contigo pronto.",
+        type: "success"
+      });
       if (clearCart) clearCart();
       setShowCheckoutModal(false);
       toggleOffcanvas();
 
     } catch (error) {
       console.error("Error procesando el pedido:", error);
-      alert("❌ Ocurrió un error al procesar tu pedido. Por favor, inténtalo de nuevo.");
+      addAlert({
+        title: "Error procesando el pedido",
+        subtitle: "Ocurrió un error al procesar tu pedido. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSubmittingOrder(false);
     }

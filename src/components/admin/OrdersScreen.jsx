@@ -58,12 +58,16 @@ const OrdersScreen = () => {
     try {
       await updateOrderStatus(orderId, newStatus);
       // Actualizamos el estado local para reflejar el cambio inmediato sin recargar toda la base de datos
-      setOrders(prevOrders => 
+      setOrders(prevOrders =>
         prevOrders.map(order => order.id === orderId ? { ...order, order_status: newStatus } : order)
       );
     } catch (error) {
       console.error("Error cambiando estado:", error);
-      alert("No se pudo actualizar el estado.");
+      addAlert({
+        title: "Ocurrio un error al actualizar el estado del pedido.",
+        subtitle: "Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     }
   };
 

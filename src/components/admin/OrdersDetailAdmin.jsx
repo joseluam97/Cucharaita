@@ -86,13 +86,20 @@ const OrdersDetailAdmin = () => {
     setIsSaving(true);
     try {
       await updateOrderDetails(id, formData);
-      alert("✅ Pedido actualizado correctamente.");
+      addAlert({
+        title: "Pedido actualizado correctamente.",
+        type: "success"
+      });
       // Actualizamos los datos locales para la vista
       setOrderData(prev => ({ ...prev, ...formData }));
       navigate(`/administration/orders/${id}`); // Volver a modo vista
     } catch (error) {
       console.error("Error guardando pedido:", error);
-      alert("❌ Hubo un error al actualizar el pedido.");
+      addAlert({
+        title: "Error al actualizar el pedido",
+        subtitle: "Ocurrió un error al tratar de actualizar el pedido. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSaving(false);
     }

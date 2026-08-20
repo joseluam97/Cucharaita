@@ -113,7 +113,12 @@ const GroupsScreen = () => {
     const listProducts = await getProductGroupByGroup(group.id);
 
     if (listProducts.length > 0) {
-      alert(`No se puede eliminar el grupo "${group.name}" porque está asociado a ${listProducts.length} producto(s). Por favor, elimina primero las asociaciones: \n ${listProducts.map(p => `- ${p.product.name}`).join('\n')}`);
+      addAlert({
+        title: "Accion no permitida.",
+        subtitle: `No se puede eliminar el grupo "${group.name}" porque está asociado a ${listProducts.length} producto(s)`,
+        type: "warning"
+      });
+
       return;
     }
 
@@ -121,14 +126,21 @@ const GroupsScreen = () => {
       try {
         await deleteGroupOptionByGroup(group.id);
         await deleteGroup(group.id);
-        alert("✅ Grupo eliminado correctamente.");
+        addAlert({
+          title: "Grupo eliminado correctamente.",
+          type: "success"
+        });
         loadGroups();
       } catch (error) {
         console.error("Error al eliminar el grupo:", error);
-        alert("❌ Hubo un error al eliminar el grupo.");
+        addAlert({
+          title: "Error al eliminar el grupo",
+          subtitle: "Ocurrió un error al tratar de eliminar el grupo. Por favor, inténtalo de nuevo.",
+          type: "error"
+        });
       }
     }
-    
+
   }
 
   return (

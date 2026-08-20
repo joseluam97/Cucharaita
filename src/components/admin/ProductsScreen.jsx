@@ -125,7 +125,11 @@ const ProductsScreen = () => {
         loadProducts(); // Refrescar la tabla para actualizar la UI
       } catch (error) {
         console.error("Error borrando producto:", error);
-        alert("No se pudo eliminar el producto. Inténtalo de nuevo.");
+        addAlert({
+          title: "Ocurrio un error al borrar el producto.",
+          subtitle: "Por favor, inténtalo de nuevo.",
+          type: "error"
+        });
       }
     }
   };

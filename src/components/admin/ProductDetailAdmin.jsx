@@ -205,7 +205,10 @@ const ProductDetailAdmin = () => {
       try {
         await deleteGroupToProduct(groupId.id_relation);
 
-        alert("✅ Grupo eliminado correctamente del producto.");
+        addAlert({
+          title: "Grupo eliminado correctamente del producto.",
+          type: "success"
+        });
         await getAllProductGroup();
 
         // Actualizar el estado de productHasOption después de eliminar un grupo
@@ -215,7 +218,11 @@ const ProductDetailAdmin = () => {
 
       } catch (error) {
         console.error("Error al eliminar el grupo:", error);
-        alert("❌ Hubo un error al eliminar el grupo del producto.");
+        addAlert({
+          title: "Error al eliminar el grupo",
+          subtitle: "Ocurrió un error al tratar de eliminar el grupo. Por favor, inténtalo de nuevo.",
+          type: "error"
+        });
       }
 
     }
@@ -232,18 +239,30 @@ const ProductDetailAdmin = () => {
     }
 
     if (!formGroupData.group || formGroupData.is_multiple === undefined || formGroupData.is_required === undefined || formGroupData.option_select === undefined) {
-      alert("Por favor, completa todos los campos del formulario antes de añadir el grupo.",);
+      addAlert({
+        title: "Complete todos los campos.",
+        subtitle: "Por favor, completa todos los campos del formulario antes de añadir el grupo.",
+        type: "warning"
+      });
       return;
     }
 
     const alreadyExists = listOptionsProduct.some((group) => group.id == formGroupData.group);
     if (alreadyExists && editMode == false) {
-      alert("Este grupo ya está asignado a este producto.");
+      addAlert({
+        title: "Accion no permitida.",
+        subtitle: "Este grupo ya está asignado a este producto.",
+        type: "warning"
+      });
       return;
     }
 
     if (formGroupData.is_multiple === true && formGroupData.option_select <= 1) {
-      alert("Si el grupo es múltiple, el número de opciones a seleccionar debe ser mayor que 1.");
+      addAlert({
+        title: "Accion no permitida.",
+        subtitle: "Si el grupo es múltiple, el número de opciones a seleccionar debe ser mayor que 1.",
+        type: "warning"
+      });
       return;
     }
 
@@ -323,13 +342,18 @@ const ProductDetailAdmin = () => {
         setProduct(data_product);
 
         navigate(`/administration/productos/${data_product.id}/edit`);
-
       }
-
-      alert("✅ Cambios guardados correctamente.");
+      addAlert({
+        title: "Producto actualizado correctamente.",
+        type: "success"
+      });
     } catch (error) {
       console.error("Error al guardar el producto:", error);
-      alert("❌ Hubo un error al actualizar el producto.");
+      addAlert({
+        title: "Error al actualizar el producto",
+        subtitle: "Ocurrió un error al tratar de actualizar el producto. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSaving(false);
     }

@@ -134,7 +134,11 @@ const OptionsProductSelect = ({ productId, quantity, selectedGroupOptions, setSe
             if (group.is_multiple) {
                 const limit = Number(group.option_select);
                 if (limit > 0 && currentSelections.length >= limit) {
-                    alert(`Has alcanzado el límite de ${limit} opciones para ${group.name}`);
+                    addAlert({
+                        title: "Accion no permitida.",
+                        subtitle: `Has alcanzado el límite de ${limit} opciones para ${group.name}`,
+                        type: "warning"
+                    });
                     return prev;
                 }
                 const optionWithUniqueKey = { ...option, tempId: Date.now() + Math.random() };

@@ -177,18 +177,30 @@ const OptionsScreen = () => {
   const handleDelete = async (optionRow) => {
 
     if (optionRow.options_list.length > 0) {
-      alert("❌ No se puede eliminar la opción porque tiene grupos asociados. Por favor, elimina primero los grupos asociados a esta opción.");
+      addAlert({
+        title: "No es posible realizar esta accion",
+        subtitle: "No se puede eliminar la opción porque tiene grupos asociados. Por favor, elimina primero los grupos asociados a esta opción.",
+        type: "warning"
+      });
+
       return;
     }
 
     if (window.confirm(`¿Estás seguro de que deseas eliminar la opción "${optionRow.name}"? Esta acción no se puede deshacer.`)) {
       try {
         await deleteOption(optionRow.id);
-        alert("✅ Opción eliminada correctamente.");
+        addAlert({
+          title: "Opción eliminada correctamente.",
+          type: "success"
+        });
         loadOptions();
       } catch (error) {
         console.error("Error al eliminar la opción:", error);
-        alert("❌ Hubo un error al eliminar la opción.");
+        addAlert({
+          title: "Error al eliminar la opcion",
+          subtitle: "Ocurrió un error al tratar de eliminar la opcion. Por favor, inténtalo de nuevo.",
+          type: "error"
+        });
       }
     }
 
@@ -196,7 +208,10 @@ const OptionsScreen = () => {
 
   const handleSaveEdit = async () => {
     if (!newName.trim()) {
-      alert("El nombre no puede estar vacío.");
+      addAlert({
+        title: "El nombre no puede estar vacío.",
+        type: "error"
+      });
       return;
     }
 
@@ -209,7 +224,10 @@ const OptionsScreen = () => {
           add_price: 0,
           associated_product: productOption ? productOption : null
         });
-        alert("✅ Opción creada correctamente.");
+        addAlert({
+          title: "Opción creada correctamente.",
+          type: "success"
+        });
       }
       else {
         await updateOption(
@@ -219,7 +237,10 @@ const OptionsScreen = () => {
             associated_product: productOption ? productOption : null
           }
         );
-        alert("✅ Opción actualizada correctamente.");
+        addAlert({
+          title: "Opción actualizada correctamente.",
+          type: "success"
+        });
       }
       setIsModalOpen(false);
       setIsCreationOption(false);
@@ -228,7 +249,11 @@ const OptionsScreen = () => {
       loadOptions();
     } catch (error) {
       console.error("Error al actualizar la opción:", error);
-      alert("❌ Hubo un error al actualizar la opción.");
+      addAlert({
+        title: "Error al actualizar la opcion",
+        subtitle: "Ocurrió un error al tratar de actualizar la opcion. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSaving(false);
     }

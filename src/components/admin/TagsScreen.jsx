@@ -6,7 +6,7 @@ import useAlertStore from '../../store/useAlertStore';
 
 const TagsScreen = () => {
   const { addAlert } = useAlertStore();
-  
+
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,9 +111,13 @@ const TagsScreen = () => {
     if (numProducts > 0) {
       // Obtenemos los nombres de hasta 3 productos para mostrarlos en el aviso
       const productNames = tag.Productos.slice(0, 3).map(p => p.name).join(", ");
-      const moreText = numProducts > 3 ? `... y ${numProducts - 3} más` : "";
 
-      alert(`❌ PROTECCIÓN ACTIVADA\n\nNo se puede eliminar el tag "${tag.title}" porque está asignado a ${numProducts} producto(s).\n\nProductos afectados: ${productNames}${moreText}.\n\nPor favor, quita este tag de esos productos antes de eliminarlo.`);
+      addAlert({
+        title: "Accion no permitida",
+        subtitle: `No se puede eliminar el tag ${tag.title} porque está asignado a ${numProducts} producto(s).`,
+        type: "warning"
+      });
+
       return; // Cortamos la ejecución aquí
     }
 
@@ -121,11 +125,18 @@ const TagsScreen = () => {
     if (window.confirm(`¿Estás seguro de eliminar el tag "${tag.title}"? Esta acción no se puede deshacer.`)) {
       try {
         await deleteTag(tag.id);
-        alert("✅ Tag eliminado correctamente.");
+        addAlert({
+          title: "Tag eliminado correctamente.",
+          type: "success"
+        });
         loadTags();
       } catch (error) {
         console.error("Error eliminando tag:", error);
-        alert("❌ Hubo un error al eliminar el tag.");
+        addAlert({
+          title: "Error al eliminar el tag",
+          subtitle: "Ocurrió un error al tratar de eliminar el tag. Por favor, inténtalo de nuevo.",
+          type: "error"
+        });
       }
     }
   };
@@ -146,14 +157,14 @@ const TagsScreen = () => {
         await updateTag(editingId, formData);
         addAlert({
           title: "Tag actualizado",
-          subtitle: "Los cambios se han guardado en la base de datos.",
+          subtitle: "Los cambios se han guardado correctamente.",
           type: "success" // Opciones: success, error, warning, info
         });
       } else {
         await createTag(formData);
         addAlert({
           title: "Tag creado",
-          subtitle: "Los cambios se han guardado en la base de datos.",
+          subtitle: "Los cambios se han guardado correctamente.",
           type: "success" // Opciones: success, error, warning, info
         });
       }
@@ -161,7 +172,11 @@ const TagsScreen = () => {
       loadTags();
     } catch (error) {
       console.error("Error guardando tag:", error);
-      alert("❌ Hubo un error al guardar el tag.");
+      addAlert({
+        title: "Error al guardar el tag",
+        subtitle: "Ocurrió un error al tratar de guardar el tag. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSaving(false);
     }

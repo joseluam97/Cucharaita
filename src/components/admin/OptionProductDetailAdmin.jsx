@@ -100,13 +100,19 @@ const OptionProductDetailAdmin = () => {
       if (isCreationMode) {
         // Crear nuevo grupo
         const newGroup = await createGroup({ name: groupName });
-        alert("✅ Grupo creado correctamente.");
+        addAlert({
+          title: "Grupo creado correctamente.",
+          type: "success"
+        });
         navigate(`/administration/option-group/${newGroup.id}/edit`);
       }
       else {
         // Llamada a BD para actualizar el nombre del grupo
         let result = await updateGroupName(id, groupName);
-        alert("✅ Cambios del grupo guardados correctamente.");
+        addAlert({
+          title: "Grupo actualizado correctamente.",
+          type: "success"
+        });
 
         // Update Data
         const groupInfo = await getGroupById(id);
@@ -114,7 +120,11 @@ const OptionProductDetailAdmin = () => {
       }
     } catch (error) {
       console.error("Error al guardar grupo:", error);
-      alert("❌ Hubo un error al guardar los cambios.");
+      addAlert({
+        title: "Error al guardar el grupo",
+        subtitle: "Ocurrió un error al tratar de guardar el grupo. Por favor, inténtalo de nuevo.",
+        type: "error"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -135,7 +145,10 @@ const OptionProductDetailAdmin = () => {
     }
 
     if (!newOptionData.option_id) {
-      alert("Por favor, selecciona una opción del listado.");
+      addAlert({
+        title: "Por favor, selecciona una opción del listado.",
+        type: "error"
+      });
       return;
     }
 
@@ -144,7 +157,12 @@ const OptionProductDetailAdmin = () => {
     );
 
     if (alreadyAssigned) {
-      alert("Esta opción ya está asignada al grupo.");
+      addAlert({
+        title: "Accion no permitida.",
+        subtitle: "Esta opción ya está asignada al grupo.",
+        type: "warning"
+      });
+
       return;
     }
 
