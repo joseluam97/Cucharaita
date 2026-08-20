@@ -16,6 +16,8 @@ module.exports = {
         'brand-black': '#000000',
         'brand-green': '#009c3c',
         'brand-red': '#ac0000',
+        'brand-blue': '#1a00ac',
+        'brand-yellow': '#aca900',
       },
       fontFamily: {
         'cooper': ['"Cooper Black"', '"Baloo 2"', 'serif'],

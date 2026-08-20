@@ -1,11 +1,11 @@
-// src/screens/OptionProductScreen.jsx
+// src/screens/GroupsScreen.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TableReusable from '../TableReusable';
 import { getAllGroups, getProductGroupByGroup, deleteGroup } from '../../hooks/useGroups';
 import { getGroupOptionsByGroup, deleteGroupOptionByGroup } from '../../hooks/useOptions';
 
-const OptionProductScreen = () => {
+const GroupsScreen = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -161,4 +161,4 @@ const OptionProductScreen = () => {
   );
 };
 
-export default OptionProductScreen;
+export default GroupsScreen;

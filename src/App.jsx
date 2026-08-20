@@ -26,11 +26,13 @@ import AdminLayout from "./components/AdminLayout";
 import OrdersScreen from "./components/admin/OrdersScreen";
 import ProductsScreen from "./components/admin/ProductsScreen";
 import ProductDetailAdmin from "./components/admin/ProductDetailAdmin";
-import OptionProductScreen from "./components/admin/OptionProductScreen";
+import GroupsScreen from "./components/admin/GroupsScreen";
 import OptionProductDetailAdmin from "./components/admin/OptionProductDetailAdmin";
 import OptionsScreen from './components/admin/OptionsScreen'
 import OrdersDetailAdmin from "./components/admin/OrdersDetailAdmin";
 import Tienda from "./components/Tienda";
+import TagsScreen from "./components/admin/TagsScreen"
+import GlobalAlerts from "./components/admin/GlobalAlerts";
 
 const App = () => {
   const { cart } = useCartStore();
@@ -152,6 +154,7 @@ const App = () => {
     return (
       <>
         <Nav />
+        <GlobalAlerts />
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -172,7 +175,7 @@ const App = () => {
                 <Route path="productos/:id/edit" element={<ProductDetailAdmin />} />
 
                 {/* RUTAS DE OPCIONES DE GRUPOS */}
-                <Route path="option-group" element={<OptionProductScreen />} />
+                <Route path="option-group" element={<GroupsScreen />} />
                 <Route path="option-group/:id" element={<OptionProductDetailAdmin />} />
                 <Route path="option-group/:id/edit" element={<OptionProductDetailAdmin />} />
                 
@@ -183,6 +186,9 @@ const App = () => {
                 
                 {/* RUTAS DE OPCIONES */}
                 <Route path="option" element={<OptionsScreen />} />
+                
+                {/* RUTAS DE TAGS */}
+                <Route path="tags" element={<TagsScreen />} />
 
               </Route>
             </Route>
